@@ -3,6 +3,7 @@ library(shiny)
 library(ggplot2)
 library(seewave)
 library(soundecology)
+options(shiny.maxRequestSize = 10000 * 1024^2)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -19,7 +20,7 @@ ui <- fluidPage(
                               "Acoustic Evenness (AEI)", 
                               "Bioacoustic Index (BiI)")),
       fileInput("input_file", "Upload Audio Files:",
-                accept = c(".wav", ".mp3", ".flac"))
+               accept = c(".wav", ".mp3", ".flac"))
     ),
     
     # Show a plot of the generated distribution
@@ -51,12 +52,23 @@ server <- function(input, output) {
     }
     
     # Calculate the Index Specified by the user
-    if (selected_index == "Acoustic Complexity") {
-      
+    if (selected_index == "Acoustic Complexity (ACI)") {
+      result <- acoustic_complexity(audio_data)
+      showNotification(paste("Acoustic Complexity:", result$AciTotAll_left_bymin))
     }
-    else if (selected_index == "Acoustic Diversity")
-    result <- acoustic_diversity(audio_data)
-    showNotification((result$adi_right+result$adi_left)/2)
+    else if (selected_index == "Acoustic Diversity (ADI)") {
+      result <- acoustic_diversity(audio_data)
+      showNotification(paste("Acoustic Diversity:", result$adi_left))
+    }
+    else if (selected_index == "Acoustic Evenness (AEI)") {
+      result <- acoustic_evenness(audio_data)
+      showNotification(paste("Acoustic Evenness:", result$aei_left))
+    }
+    else if (selected_index == "Bioacoustic Index (BiI)") {
+      result <- bioacoustic_index(audio_data)
+      showNotification(paste("Bioacoustic Index:", result$left_area))
+    }
+    
     
   })
 }
