@@ -8,17 +8,17 @@ library(soundecology)
 ui <- fluidPage(
   
   # Application title
-  titlePanel("Acoustic Diversity Index"),
+  titlePanel("Acoustic Calculator"),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
-      sliderInput("bins",
-                  "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30),
-      fileInput("input01", "Upload Audio Files:",
+      selectInput("selected_index", "Select an Index Type:", 
+                  choices = c("Acoustic Complexity (ACI)", 
+                              "Acoustic Diversity (ADI)", 
+                              "Acoustic Evenness (AEI)", 
+                              "Bioacoustic Index (BiI)")),
+      fileInput("input_file", "Upload Audio Files:",
                 accept = c(".wav", ".mp3", ".flac"))
     ),
     
@@ -31,20 +31,30 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   # Load necessary packages
-  showNotification("big boobea")
+
   output$distPlot <- renderPlot({
-    req(input$input01)
+    req(input$selected_index)
+    req(input$input_file)
+    
+    # Read in which type of calculation the user wishes to do
+    selected_index <- input$selected_index
     
     # Read the file uploaded by the user
-    if (endsWith(input$input01$name, ".wav")) {
-      audio_data <- readWave(input$input01$datapath)
-    } else if (endsWith(input$input01$name, ".mp3")) {
-      audio_data <- readMP3(input$input01$datapath)
-    } else if (endsWith(input$input01$name, ".flac")) {
-      audio_data <- read.flac(input$input01$datapath)
+    if (endsWith(input$input_file$name, ".wav")) {
+      audio_data <- readWave(input$input_file$datapath)
+    } else if (endsWith(input$input_file$name, ".mp3")) {
+      audio_data <- readMP3(input$input_file$datapath)
+    } else if (endsWith(input$input_file$name, ".flac")) {
+      audio_data <- read.flac(input$input_file$datapath)
     } else {
       stop("Unsupported file format.")
     }
+    
+    # Calculate the Index Specified by the user
+    if (selected_index == "Acoustic Complexity") {
+      
+    }
+    else if (selected_index == "Acoustic Diversity")
     result <- acoustic_diversity(audio_data)
     showNotification((result$adi_right+result$adi_left)/2)
     
