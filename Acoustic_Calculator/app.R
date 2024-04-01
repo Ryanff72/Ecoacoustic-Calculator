@@ -19,64 +19,117 @@ ui <- fluidPage(
                               "Acoustic Diversity (ADI)", 
                               "Acoustic Evenness (AEI)", 
                               "Bioacoustic Index (BiI)")),
-      fileInput("input_file", "Upload Audio Files:",
-               accept = c(".wav", ".mp3", ".flac"))
+      fileInput("input_zip", "Upload ZIP File:")
     ),
     
     # Show a plot of the generated distribution
     mainPanel(
-      plotOutput("distPlot")
+      textOutput("result_output")
     )
   )
 )
 
 server <- function(input, output) {
-  # Load necessary packages
-
-  output$distPlot <- renderPlot({
+  output$result_output <- renderText({
     req(input$selected_index)
-    req(input$input_file)
+    req(input$input_zip)
     
-    # Read in which type of calculation the user wishes to do
-    selected_index <- input$selected_index
+    # Check the contents of the ZIP file
+    zip_contents <- tryCatch({
+      unzip_list <- unzip(input$input_zip$datapath, list = TRUE)
+      unzip_list$Name
+    }, error = function(e) {
+      print(paste("Error accessing ZIP archive contents:", e$message))
+      return(NULL)
+    })
     
-    # Read the file uploaded by the user
-    if (endsWith(input$input_file$name, ".wav")) {
-      audio_data <- readWave(input$input_file$datapath)
-    } else if (endsWith(input$input_file$name, ".mp3")) {
-      audio_data <- readMP3(input$input_file$datapath)
-    } else if (endsWith(input$input_file$name, ".flac")) {
-      audio_data <- read.flac(input$input_file$datapath)
+    print("ZIP contents:")
+    print(zip_contents)
+    
+    if (!is.null(zip_contents)) {
+      # Check if any audio files are present in the ZIP contents
+      audio_files <- grep("\\.(wav|mp3|flac)$", zip_contents, value = TRUE, ignore.case = TRUE)
+      
+      print("Audio files found:")
+      print(audio_files)
+      
+      if (length(audio_files) > 0) {
+        # Extract files from the uploaded ZIP file
+        extracted_folder <- tempfile()
+        unzip(input$input_zip$datapath, exdir = extracted_folder)
+        
+        # List all audio files in the extracted folder
+        audio_files <- list.files(extracted_folder, pattern = ".wav$|.mp3$|.flac$", full.names = TRUE)
+        print("Extracted audio files:")
+        print(audio_files)
+        
+        # Initialize a list to store formatted results for each audio file
+        formatted_results <- c()
+        
+        # Loop through each audio file
+        for (file_path in audio_files) {
+          # Read the file
+          if (endsWith(file_path, ".wav")) {
+            audio_data <- readWave(file_path)
+          } else if (endsWith(file_path, ".mp3")) {
+            audio_data <- readMP3(file_path)
+          } else if (endsWith(file_path, ".flac")) {
+            audio_data <- read.flac(file_path)
+          } else {
+            stop("Unsupported file format.")
+          }
+          
+          # Calculate the index specified by the user
+          if (input$selected_index == "Acoustic Complexity (ACI)") {
+            result <- acoustic_complexity(audio_data)
+            if (!is.null(result$AciTotAll_left_bymin)) {
+              result_value <- result$AciTotAll_left_bymin
+              if (is.list(result_value)) {
+                result_value <- toString(result_value) # Convert list to string
+              }
+              formatted_results <- c(formatted_results, paste("File:", file_path, "Acoustic Complexity:", result_value))
+            } else {
+              formatted_results <- c(formatted_results, paste("File:", file_path, "Acoustic Complexity: N/A"))
+            }
+          }
+          
+          else if (input$selected_index == "Acoustic Diversity (ADI)") {
+            result <- acoustic_diversity(audio_data)
+            result_value <- result$adi_left
+            if (is.list(result_value)) {
+              result_value <- toString(result_value) # Convert list to string
+            }
+            formatted_results <- c(formatted_results, paste("File:", file_path, "Acoustic Diversity:", result_value))
+          }
+          else if (input$selected_index == "Acoustic Evenness (AEI)") {
+            result <- acoustic_evenness(audio_data)
+            result_value <- result$ae_left
+            if (is.list(result_value)) {
+              result_value <- toString(result_value) # Convert list to string
+            }
+            formatted_results <- c(formatted_results, paste("File:", file_path, "Acoustic Evenness:", result_value))
+          }
+          else if (input$selected_index == "Bioacoustic Index (BiI)") {
+            result <- bioacoustic_index(audio_data)
+            result_value <- result$left_area
+            if (is.list(result_value)) {
+              result_value <- toString(result_value) # Convert list to string
+            }
+            formatted_results <- c(formatted_results, paste("File:", file_path, "Bioacoustic Index:", result_value))
+          }
+        }
+        
+        return(formatted_results)
+      } else {
+        print("No audio files found in the ZIP archive.")
+      }
     } else {
-      stop("Unsupported file format.")
+      print("Error accessing ZIP archive contents.")
     }
-    
-    # Calculate the Index Specified by the user
-    if (selected_index == "Acoustic Complexity (ACI)") {
-      result <- acoustic_complexity(audio_data)
-      showNotification(paste("Acoustic Complexity:", result$AciTotAll_left_bymin))
-    }
-    else if (selected_index == "Acoustic Diversity (ADI)") {
-      result <- acoustic_diversity(audio_data)
-      showNotification(paste("Acoustic Diversity:", result$adi_left))
-    }
-    else if (selected_index == "Acoustic Evenness (AEI)") {
-      result <- acoustic_evenness(audio_data)
-      showNotification(paste("Acoustic Evenness:", result$aei_left))
-    }
-    else if (selected_index == "Bioacoustic Index (BiI)") {
-      result <- bioacoustic_index(audio_data)
-      showNotification(paste("Bioacoustic Index:", result$left_area))
-    }
-    
-    
   })
 }
 
 
 
-
-
-
-# Run the application 
 shinyApp(ui = ui, server = server)
+
