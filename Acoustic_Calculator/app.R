@@ -92,7 +92,6 @@ server <- function(input, output) {
               formatted_results <- c(formatted_results, paste("File:", file_path, "Acoustic Complexity: N/A"))
             }
           }
-          
           else if (input$selected_index == "Acoustic Diversity (ADI)") {
             result <- acoustic_diversity(audio_data)
             result_value <- result$adi_left
@@ -102,12 +101,11 @@ server <- function(input, output) {
             formatted_results <- c(formatted_results, paste("File:", file_path, "Acoustic Diversity:", result_value))
           }
           else if (input$selected_index == "Acoustic Evenness (AEI)") {
-            result <- acoustic_evenness(audio_data)
-            result_value <- result$ae_left
-            if (is.list(result_value)) {
-              result_value <- toString(result_value) # Convert list to string
-            }
-            formatted_results <- c(formatted_results, paste("File:", file_path, "Acoustic Evenness:", result_value))
+            result <- acoustic_evenness(audio_data, freq_step = 500)
+            result_value <- result$aei_left
+            print(paste("resultS!~!!: ", result_value))
+            print(result_value)
+            formatted_results <- c(formatted_results, paste("File:", file_path, "Bioacoustic Index:", result_value))
           }
           else if (input$selected_index == "Bioacoustic Index (BiI)") {
             result <- bioacoustic_index(audio_data)
