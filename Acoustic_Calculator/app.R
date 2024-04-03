@@ -34,7 +34,7 @@ server <- function(input, output) {
     req(input$selected_index)
     req(input$input_zip)
     
-    # Check the contents of the ZIP file
+    # Check the contents of le ZIP file
     zip_contents <- tryCatch({
       unzip_list <- unzip(input$input_zip$datapath, list = TRUE)
       unzip_list$Name
