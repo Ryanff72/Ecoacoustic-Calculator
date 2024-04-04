@@ -41,8 +41,13 @@ server <- function(input, output, session) {
   output$result_acoustic_plot <- renderPlot({
     req(input$selected_index)
     req(input$input_zip)
+<<<<<<< HEAD
     start_time <- Sys.time()
     # Check the contents of the ZIP file
+=======
+    
+    # Check the contents of le ZIP file
+>>>>>>> 99aea84296b9c4344c2c500a7c53f13261736b43
     zip_contents <- tryCatch({
       unzip_list <- unzip(input$input_zip$datapath, list = TRUE)
       unzip_list$Name
