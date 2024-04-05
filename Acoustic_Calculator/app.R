@@ -34,7 +34,7 @@ ui <- fluidPage(
       # Freq Slider
       
       sliderInput("freq_range", "Frequency Range (Hz):", 
-                  min = 0, max = 20000, value = c(1000, 20000)),
+                  min = 0, max = 20000, value = c(0, 20000)),
       
       # Index Description text
       
@@ -84,10 +84,8 @@ server <- function(input, output, session) {
     
     # Calculates the acoustic indices. 
     # This function is called in a multithreaded manner.
-    y_chart_title <- NULL
+    
     calculate_index <- function(file_path, selected_index_value) {
-      
-      y_chart_title <- selected_index_value
 
       print(file_path)
       if (endsWith(file_path, ".wav")) {
@@ -116,17 +114,18 @@ server <- function(input, output, session) {
       print("selected index:")
       print(selected_index_value)
       # Calculate the selected index
+      trimmed_audio <- trim(audio_data, start = 0, end = 10)
       if (selected_index_value == "Acoustic Complexity (ACI)") {
-        result <- acoustic_complexity(audio_data) 
+        result <- acoustic_complexity(trimmed_audio) 
         result_value <- result$AciTotAll_left_bymin
       } else if (selected_index_value == "Acoustic Diversity (ADI)") {
-        result <- acoustic_diversity(audio_data)
+        result <- acoustic_diversity(trimmed_audio)
         result_value <- result$adi_left
       } else if (selected_index_value == "Acoustic Evenness (AEI)") {
         result <- acoustic_evenness(audio_data, freq_step = 500)
         result_value <- result$aei_left
       } else if (selected_index_value == "Bioacoustic Index (BiI)") {
-        result <- bioacoustic_index(audio_data)
+        result <- bioacoustic_index(trimmed_audio)
         result_value <- result$left_area
       }
       return(result_value)
