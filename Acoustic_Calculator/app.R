@@ -5,6 +5,7 @@ library(ggplot2)
 library(seewave)
 library(soundecology)
 library(future.apply)
+library(stringr)
 plan(multisession)
 
 options(shiny.maxRequestSize = 10000 * 1024^2)
@@ -13,7 +14,7 @@ options(shiny.maxRequestSize = 10000 * 1024^2)
 ui <- fluidPage(
   
   # Application title
-  titlePanel("Acoustic Calculator"),
+  titlePanel("Ecoacoustic Calculator"),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
@@ -35,6 +36,10 @@ ui <- fluidPage(
       
       sliderInput("freq_range", "Frequency Range (Hz):", 
                   min = 0, max = 20000, value = c(0, 20000)),
+      
+      sliderInput("clip_size", "Shorten clip to How long for analysis?
+                  (shorter is faster, longer is more accurate):", min = 3,
+                  max = 50, value = 15),
       
       # Index Description text
       
@@ -113,8 +118,25 @@ server <- function(input, output, session) {
       }
       print("selected index:")
       print(selected_index_value)
+      
+      # Set the desired duration to shorten the audio to (in seconds)
+      desired_duration <- 30  # Extract only the first second
+      
+      # Extract the sample rate of the audio
+      sample_rate <- audio_data@samp.rate
+      
+      # Calculate the number of samples corresponding to one second of audio
+      desired_samples <- round(desired_duration * sample_rate)
+      
+      # Trim the audio to the desired duration
+      trimmed_audio <- audio_data[1:min(desired_samples, length(audio_data))]
+      
+      # Save the trimmed audio to a new file
+      writeWave(trimmed_audio, "trimmed_audio_file.wav")
+      
+      
       # Calculate the selected index
-      trimmed_audio <- trim(audio_data, start = 0, end = 10)
+      
       if (selected_index_value == "Acoustic Complexity (ACI)") {
         result <- acoustic_complexity(trimmed_audio) 
         result_value <- result$AciTotAll_left_bymin
@@ -172,12 +194,17 @@ server <- function(input, output, session) {
     
     # Plot the graph with points and have a line connecting them
     
-    ggplot(result_data, aes(x = Audio_File, y = Index_Value, group = 1)) +
-      geom_line(stat = "identity", color = "green", size = 1.5) +
-      geom_point(color = "green", size = 3) +
+    ggplot(result_data, aes(x = str_wrap(Audio_File, width = 10), y = Index_Value, group = 1)) +
+      geom_line(stat = "identity", color = "#808080", size = 1.5) +
+      geom_point(color = "#228B22", size = 3) +
       labs(title = "Acoustic Index Plot",
            x = "Audio File",
-           y = input$selected_index)
+           y = input$selected_index) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 10))  # Adjust font size as needed
+    
+    
+    
+
   })
   
   # Code for the description of the index
@@ -186,9 +213,10 @@ server <- function(input, output, session) {
     index_type <- input$selected_index
     text <- ""
     if (index_type == "Acoustic Complexity (ACI)") {
-      text <- "<p>The Acoustic Complexity index is <strong> calculated by 
+      text <- "<p><h3>Information</h3>
+            The Acoustic Complexity index is calculated by 
             dividing the audiofile into small segments (bins) and then adding up
-            the differences in frequency of the adjacent bins </strong> (Diaz et al.). 
+            the differences in frequency of the adjacent bins (Diaz et al.). 
             This means that
             audio files containing more diverse parts of the harmonic spectrum
             (within the minimum and maximum values) will result in a higher ACI.
@@ -197,7 +225,17 @@ server <- function(input, output, session) {
             to output the sum of the ACI over each file divided by the length
             (in minutes) of the audio file, rather than the total, as the total
             is typically difficult to read and makes comparing across different
-            sized audio files impossible.</p>"
+            sized audio files impossible. <br><br>
+            <h3>How will the ACI change based upon my settings?</h3>
+            The ACI is an index that is not known to experience large shifts based
+            upon tweaking the frequency range (Hyland et al.). However, the 
+            analyzed clip length can have an impact on the validity of the 
+            acoustic indices in each file. Analyzing a longer audio file will
+            always be more accurate, but if you are analyzing data recorded over
+            a long period of time with a substaintial amount of audio even with 
+            shortening to 4-5 seconds for each file, a low clip length will still
+            be accurate, with the drawback of some outlying indices.
+            </p>"
     } else if (index_type == "Acoustic Diversity (ADI)") {
       text <- "<p>ADI blurb text goes here...</p>"
     } else if (index_type == "Acoustic Evenness (AEI)") {
