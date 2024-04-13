@@ -39,7 +39,11 @@ ui <- fluidPage(
       
       sliderInput("clip_size", "Shorten clip to How long for analysis?
                   (shorter is faster, longer is more accurate):", min = 3,
-                  max = 50, value = 15),
+                  max = 50, value = 10),
+      
+      # Reset Sliders
+      
+      actionButton("reset_sliders", "Reset"),
       
       # Index Description text
       
@@ -59,6 +63,20 @@ server <- function(input, output, session) {
   #stop shiny app upon close
   
   session$onSessionEnded(function() { stopApp() })
+  
+  # read clip size slider
+  
+  clip_slider_value <- reactive({
+    input$clip_size
+  })
+  
+  # code for reset slider
+  
+  observeEvent(input$reset_sliders, {
+    updateSliderInput(inputId = "freq_range",
+                      value = c(0, 20000))
+    updateSliderInput(inputId = "clip_size", value = 10)
+  })
   
   # Code for the graph itself
   
@@ -90,7 +108,9 @@ server <- function(input, output, session) {
     # Calculates the acoustic indices. 
     # This function is called in a multithreaded manner.
     
-    calculate_index <- function(file_path, selected_index_value) {
+    calculate_index <- function(file_path,
+                                selected_index_value,
+                                desired_duration) {
 
       print(file_path)
       if (endsWith(file_path, ".wav")) {
@@ -119,12 +139,12 @@ server <- function(input, output, session) {
       print("selected index:")
       print(selected_index_value)
       
-      # Set the desired duration to shorten the audio to (in seconds)
-      desired_duration <- 30  # Extract only the first second
+      # PUT SLIDER VALUE HERE!!
       
       # Extract the sample rate of the audio
       sample_rate <- audio_data@samp.rate
       
+      print("ajdsalkdsa")
       # Calculate the number of samples corresponding to one second of audio
       desired_samples <- round(desired_duration * sample_rate)
       
@@ -176,7 +196,8 @@ server <- function(input, output, session) {
     # Initialize a list to store formatted results for each audio file
     result_values <- future_lapply(audio_files,
                                    calculate_index,
-                                   selected_index_value = input$selected_index)
+                                   selected_index_value = input$selected_index,
+                                   desired_duration = clip_slider_value())
     
     # Create a data frame with audio file names and their corresponding index values
     result_data <- data.frame(Audio_File = basename(audio_files), Index_Value = unlist(result_values))
