@@ -30,7 +30,8 @@ ui <- fluidPage(
                   choices = c("Acoustic Complexity (ACI)", 
                               "Acoustic Diversity (ADI)", 
                               "Acoustic Evenness (AEI)", 
-                              "Bioacoustic Index (BiI)")),
+                              "Bioacoustic Index (BiI)",
+                              "Normalized Difference Soundscape Index (NDSI)")),
       
       # Freq Slider
       
@@ -68,6 +69,24 @@ server <- function(input, output, session) {
   
   clip_slider_value <- reactive({
     input$clip_size
+  })
+  
+  # Min freq reader
+  
+  frequency_reader_min_value <- reactive({
+    input$freq_range[1]
+  })
+ 
+  # Max freq reader
+   
+  frequency_reader_max_value <- reactive({
+    input$freq_range[2]
+  })
+  
+  # reset the left slider when there is no min frequency setting
+  
+  slider_left_zero <- reactive({
+    updateSliderInput(session, "freq_range", value = c(0, input$slider[2]))
   })
   
   # code for reset slider
@@ -110,7 +129,9 @@ server <- function(input, output, session) {
     
     calculate_index <- function(file_path,
                                 selected_index_value,
-                                desired_duration) {
+                                desired_duration,
+                                min_freq,
+                                max_freq) {
 
       print(file_path)
       if (endsWith(file_path, ".wav")) {
@@ -158,17 +179,30 @@ server <- function(input, output, session) {
       # Calculate the selected index
       
       if (selected_index_value == "Acoustic Complexity (ACI)") {
-        result <- acoustic_complexity(trimmed_audio) 
+        result <- acoustic_complexity(trimmed_audio,
+                                      min_freq = min_freq,
+                                      max_freq = max_freq) 
         result_value <- result$AciTotAll_left_bymin
       } else if (selected_index_value == "Acoustic Diversity (ADI)") {
-        result <- acoustic_diversity(trimmed_audio)
+        #slider_left_zero()
+        result <- acoustic_diversity(trimmed_audio,
+                                     max_freq = max_freq)
         result_value <- result$adi_left
       } else if (selected_index_value == "Acoustic Evenness (AEI)") {
-        result <- acoustic_evenness(audio_data, freq_step = 500)
+        result <- acoustic_evenness(trimmed_audio, 
+                                    freq_step = 500, 
+                                    max_freq = max_freq)
         result_value <- result$aei_left
       } else if (selected_index_value == "Bioacoustic Index (BiI)") {
-        result <- bioacoustic_index(trimmed_audio)
+        result <- bioacoustic_index(trimmed_audio,
+                                    min_freq = min_freq,
+                                    max_freq = max_freq)
         result_value <- result$left_area
+      } else if (selected_index_value == "Normalized Difference Soundscape Index (NDSI)") {
+        result <- ndsi(trimmed_audio,
+                       bio_min = min_freq,
+                       bio_max = max_freq)
+        result_value <- result$ndsi_left 
       }
       return(result_value)
     }
@@ -197,7 +231,9 @@ server <- function(input, output, session) {
     result_values <- future_lapply(audio_files,
                                    calculate_index,
                                    selected_index_value = input$selected_index,
-                                   desired_duration = clip_slider_value())
+                                   desired_duration = clip_slider_value(),
+                                   min_freq = frequency_reader_min_value(),
+                                   max_freq = frequency_reader_max_value())
     
     # Create a data frame with audio file names and their corresponding index values
     result_data <- data.frame(Audio_File = basename(audio_files), Index_Value = unlist(result_values))
@@ -249,7 +285,9 @@ server <- function(input, output, session) {
             sized audio files impossible. <br><br>
             <h3>How will the ACI change based upon my settings?</h3>
             The ACI is an index that is not known to experience large shifts based
-            upon tweaking the frequency range (Hyland et al.). However, the 
+            upon tweaking the frequency range, but because of how the index is
+            calculated, this largely depends on the values present in the audio
+            file (Hyland et al.). However, the 
             analyzed clip length can have an impact on the validity of the 
             acoustic indices in each file. Analyzing a longer audio file will
             always be more accurate, but if you are analyzing data recorded over
@@ -263,6 +301,8 @@ server <- function(input, output, session) {
       text <- "<p>AEI blurb text goes here...</p>"
     } else if (index_type == "Bioacoustic Index (BiI)") {
       text <- "<p>BiI blurb text goes here...</p>"
+    } else if (index_type == "Normalized Difference Soundscape Index (NDSI)") {
+      text <- "<p>NDSI blurb text goes here..</p>"
     }
     HTML(text)
   })
