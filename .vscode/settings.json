@@ -1,0 +1,7 @@
+{
+    "cmake.configureArgs": [
+        "-DVCPKG_TARGET_TRIPLET=-static"
+    ],
+    "vcpkg.target.useStaticLib": true,
+    "vcpkg.target.defaultTriplet": "-static"
+}

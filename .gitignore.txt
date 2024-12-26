@@ -1,0 +1,3 @@
+.vscode
+eco_calc/ffmpeg/
+eco_calc/venv/
