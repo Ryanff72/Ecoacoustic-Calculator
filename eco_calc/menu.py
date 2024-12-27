@@ -1,28 +1,26 @@
 import ctypes
+import glob
 import tkinter as tk
 import platform
-from tkinter import filedialog
+from directory_operations import DirectoryOperations
+from acoustic_tools import AcousticTools
 
-# Load acoustic calculator C library
-eco_calc = ctypes.CDLL("./eco_calc.dll")
+class Menu:
+    def create_main_menu():
+        # Create a Window
+        root = tk.Tk()
+        root.title("Ecoacoustic_Calculator")
+        root.geometry("640x480")
 
-print(platform.architecture())
+        # File Import Button
+        file_import_button = tk.Button(root, text="File", command=DirectoryOperations.open_folder)
+        file_import_button.pack(pady=50)
+        file_import_button.place(x=5,y=5)
 
-def open_folder():
-    file_path = filedialog.askdirectory(title="Select a File")
-    if file_path:
-        print(f"User selected: {file_path}")
-        eco_calc.x()
+        # Calculate ACI Button
+        file_import_button = tk.Button(root, text="ACI", command=AcousticTools.find_aci)
+        file_import_button.pack(pady=50)
+        file_import_button.place(x=5,y=50)
 
-# Create a Window
-root = tk.Tk()
-root.title("Ecoacoustic_Calculator")
-root.geometry("640x480")
-
-# File Import Button
-file_import_button = tk.Button(root, text="File", command=open_folder)
-file_import_button.pack(pady=50)
-file_import_button.place(x=5,y=5)
-
-# Event Loop
-root.mainloop()
+        # Event Loop
+        root.mainloop()
