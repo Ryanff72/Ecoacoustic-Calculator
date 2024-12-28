@@ -18,9 +18,9 @@ class Menu:
         file_import_button.place(x=5,y=5)
 
         # Calculate ACI Button
-        file_import_button = tk.Button(root, text="ACI", command=AcousticTools.find_aci)
-        file_import_button.pack(pady=50)
-        file_import_button.place(x=5,y=50)
+        calculate_aci_button = tk.Button(root, text="ACI", command=lambda: AcousticTools.find_aci(DirectoryOperations.target_audio_folder))
+        calculate_aci_button.pack(pady=50)
+        calculate_aci_button.place(x=5,y=50)
 
         # Event Loop
         root.mainloop()

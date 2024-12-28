@@ -1,8 +1,10 @@
-CC = gcc
-CLFAGS = -shared -m64 -IC:\Users\maste\Documents\TerminalHome\Projects\Ecoacoustic-Calculator\eco_calc\ffmpeg-7.1-full_build-shared\include
+CLFAGS = -Wall -shared -m64
+
+TARGET = eco_calc.dll
+SRC = eco_calc.c
 
 eco_calc.dll: eco_calc.c
-	$(CC) $(CLFAGS) -o $@ $^
+	$(CC) $(CLFAGS) -o $(TARGET) $(SRC)
 
 clean:
 	rm -f eco_calc.dll
