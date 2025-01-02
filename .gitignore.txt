@@ -1,3 +1,0 @@
-.vscode
-eco_calc/ffmpeg-7.1-full_build-shared/
-eco_calc/venv/
