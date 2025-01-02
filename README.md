@@ -1,4 +1,4 @@
----THIS PROJECT IS BEING REWORKED TO BE A PYTHON APP WHICH OFFLOADS THE COMPUTATION TO C---
+---Currently reworking this project to be in Python (more portable)---
 
 
 
