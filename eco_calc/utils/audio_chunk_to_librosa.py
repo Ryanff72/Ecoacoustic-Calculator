@@ -6,7 +6,6 @@ import io
 class AudioChunkToLibrosa:
     @staticmethod
     def audio_chunk_to_librosa(chunk):
-        print(f"len: {len(chunk)}")
         samples = np.array(chunk.get_array_of_samples(), dtype=np.float32)
         
         # Handle stereo explicitly without reshaping issues
