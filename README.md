@@ -1,5 +1,6 @@
 ---Currently reworking this project to be in Python (more portable)---
 
+https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13254
 
 
 ---OLD REPO---

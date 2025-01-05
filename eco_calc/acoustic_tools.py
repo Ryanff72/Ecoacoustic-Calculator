@@ -14,7 +14,7 @@ class AcousticTools:
 
 	# Calculates ACI based on parameters given.
 
-	def calculate_acoustic_index(folder, index_name, sample_rate=44100, fft_window_size=1024, hop_length=512, resolution_ms=50000, batch_size_in_file_count=1): 
+	def calculate_acoustic_index(folder, index_name, sample_rate=44100, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, num_bands=10): 
 		on_file = 0
 		audio_chunk = AudioSegment.empty()
 		file_count = len(glob.glob(os.path.join(folder, "*")))
@@ -31,6 +31,8 @@ class AcousticTools:
 				for chunk in chunks:
 					if index_name == "ACI":
 						index_values.append(AcousticTools.calculate_aci(sr, fft_window_size, hop_length, chunk))
+					if index_name == "ADI":
+						index_values.append(AcousticTools.calculate_adi(chunk, sr, num_bands))
 				audio_chunk = AudioSegment.empty()
 		end = time.time()
 		print(index_values)
@@ -40,10 +42,10 @@ class AcousticTools:
 	# Splits an audio file into the chunks. The acoustic index of each chunk will be calculated
 	# seperately and be represented as a different data point.
 
-	def calculate_aci(sr, fft_window_size, hop_length, chunk):
+	def calculate_aci(sr, fft_window_size, hop_length, audio):
 		# f: Frequencies, t: Time bins, Sxx: Spectrogram (magnitude of frequency components over time)
 		frequencies, time_bins, spectrogram_magnitude = spectrogram(
-			chunk,
+			audio,
 			fs=sr,
 			nperseg=fft_window_size,
 			noverlap=fft_window_size - hop_length
@@ -61,6 +63,16 @@ class AcousticTools:
 
 		# Compute the mean ACI across all frequency bands
 		return np.mean(aci_per_frequency_band)
+	
+	# Uses the mel spectogram and the number of bands to calculate AdI
+
+	def calculate_adi(audio, sr, num_bands):
+		mel_spectrogram = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=num_bands, power=1.0)
+		band_amplitudes = np.sum(mel_spectrogram, axis=1)
+		total_amplitude = np.sum(band_amplitudes)
+		proportions = band_amplitudes / total_amplitude
+		shannon_diversity_index = -np.sum(proportions * np.log(proportions + 1e-10))
+		return shannon_diversity_index
 
 	def resolutionize(audio, sr, resolution_ms):
 		num_samples_per = int(sr * (resolution_ms / 1000.0))
