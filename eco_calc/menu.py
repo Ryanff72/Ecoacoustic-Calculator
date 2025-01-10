@@ -22,7 +22,7 @@ class Menu:
 		calculate_index_button.place(x=5,y=50)
         # Calculate Index Dropdown
 
-		indices = ["ACI", "ADI"]
+		indices = ["ACI", "ADI", "H","AEve", "M","NDSI"]
 		acoustic_index_dropdown = ttk.Combobox(root, values=indices)
 		acoustic_index_dropdown.pack()	
 		acoustic_index_dropdown.bind("<<ComboboxSelected>>", lambda event: Menu.update_calculate_button(event, calculate_index_button, acoustic_index_dropdown.get()))
