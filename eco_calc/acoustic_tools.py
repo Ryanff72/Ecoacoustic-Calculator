@@ -4,6 +4,8 @@ import glob
 import os
 import librosa
 import numpy as np
+import tkinter as tk
+from tkinter import messagebox
 from scipy.signal import spectrogram
 from scipy.signal import hilbert
 from scipy.io import wavfile
@@ -17,6 +19,8 @@ class AcousticTools:
 	# Calculates ACI based on parameters given.
 
 	def calculate_acoustic_index(folder, index_name, sample_rate=44100, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, num_bands=10): 
+		print("resolution:")
+		print(resolution_ms)
 		on_file = 0
 		audio_chunk = AudioSegment.empty()
 		file_count = len(glob.glob(os.path.join(folder, "*")))
@@ -26,7 +30,7 @@ class AcousticTools:
 			on_file += 1
 			audio_chunk += AudioSegment.from_file(file)
 			if on_file % batch_size_in_file_count == 0 or on_file == file_count:
-				print(f"batch {math.floor(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
+				print(f"batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
 				audio_signal, sr = AudioChunkToLibrosa.audio_chunk_to_librosa(audio_chunk)
 				chunks = AcousticTools.resolutionize(audio_signal, sr, resolution_ms)
 				totallen = 0

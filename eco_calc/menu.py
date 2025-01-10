@@ -2,34 +2,42 @@ import ctypes
 import glob
 import tkinter as tk
 from tkinter import ttk
+import tkinter.font as tkFont
 import platform
 from directory_operations import DirectoryOperations
 from acoustic_tools import AcousticTools
+from toolbar import Toolbar
+from settings_page import SettingsPage
+from graph_page import GraphPage
 
-class Menu:
-	def create_main_menu():
-		root = tk.Tk()
-		root.title("Ecoacoustic_Calculator")
-		root.geometry("640x480")
-		# Create a Window
-		# File Import Button
-		file_import_button = tk.Button(root, text="File", command=DirectoryOperations.open_folder)
-		file_import_button.pack(pady=50)
-		file_import_button.place(x=5,y=5)
+class Menu(tk.Tk):
 
-		calculate_index_button = tk.Button(root, text=f"Calculate", command=lambda: AcousticTools.calculate_acoustic_index(DirectoryOperations.target_audio_folder, acoustic_index_dropdown.get()))
-		calculate_index_button.pack(pady=50)
-		calculate_index_button.place(x=5,y=50)
-        # Calculate Index Dropdown
+	def __init__(self):
+		super().__init__()
+		self.title("Ecoacoustic_Calculator")
+		self.geometry("1000x600")
 
-		indices = ["ACI", "ADI", "H","AEve", "M", "NDSI", "Bio"]
-		acoustic_index_dropdown = ttk.Combobox(root, values=indices)
-		acoustic_index_dropdown.pack()	
-		acoustic_index_dropdown.bind("<<ComboboxSelected>>", lambda event: Menu.update_calculate_button(event, calculate_index_button, acoustic_index_dropdown.get()))
-        # Calculate Index Button
+		# Font configuration
+		self.title_font = tkFont.Font(family="Helvetica", size=14, weight="bold")
+		self.label_font = tkFont.Font(family="Helvetica", size=14)
+		self.button_font = tkFont.Font(family="Helvetica", size=14)
 
-		# Event Loop
-		root.mainloop()
+		self.toolbar = Toolbar(self, self.title_font, self.label_font, self.button_font)
+		self.toolbar.pack(side="top", fill="x")
 
-	def update_calculate_button(event, button, index):
-		button.config(text=f"Calculate {index}")
+		self.container = tk.Frame(self)	
+		self.container.pack(side="top", fill="both", expand=True)
+
+		self.frames = {}
+
+		for Page in (SettingsPage, GraphPage):
+			page_name = Page.__name__
+			frame = Page(parent=self.container, controller=self, title_font=self.title_font, label_font=self.label_font, button_font=self.button_font)
+			self.frames[page_name] = frame
+			frame.grid(row=0, column=0, sticky="nsew")
+
+		self.show_frame("SettingsPage")
+
+	def show_frame(self, page_name):
+		frame = self.frames[page_name]
+		frame.tkraise()
