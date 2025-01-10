@@ -43,6 +43,8 @@ class AcousticTools:
 						index_values.append(AcousticTools.calculate_m(chunk))
 					elif index_name == "NDSI":
 						index_values.append(AcousticTools.calculate_ndsi(chunk, sr, num_bands, fft_window_size, hop_length))
+					elif index_name == "Bio":
+						index_values.append(AcousticTools.calculate_bio(chunk, sr, num_bands, fft_window_size, hop_length))
 				audio_chunk = AudioSegment.empty()
 		end = time.time()
 		print(index_values)
@@ -84,7 +86,7 @@ class AcousticTools:
 		shannon_diversity_index = -np.sum(proportions * np.log(proportions + 1e-10))
 		return shannon_diversity_index
 
-	# Uses the mel spectogram and the number of bands to calculate ADI
+	# calculates ADI
 
 	def calculate_adi(audio, sr, num_bands, fft_window_size, hop_length):
 		stft = np.abs(librosa.stft(audio, n_fft=fft_window_size, hop_length=hop_length))
@@ -101,6 +103,19 @@ class AcousticTools:
 		shannon_i = -np.sum(proportions * np.log(proportions + 1e-10))
 		adi = shannon_i / np.log(len(band_energies) + 1e-10)
 		return max(adi, 0.0)
+
+	# calculates Bioacoustic Index
+
+	def calculate_bio(audio, sr, num_bands, fft_window_size, hop_length):
+		stft = np.abs(librosa.stft(audio, n_fft=fft_window_size, hop_length=hop_length))
+		frequencies = librosa.fft_frequencies(sr=sr, n_fft=fft_window_size)
+		band_mask = (frequencies >= 2000) & (frequencies <= 11000)
+		stft_band = stft[band_mask, :]
+		energies = np.sum(stft_band ** 2, axis = 0)
+		max_energy = np.max(energies)
+		min_energy = np.min(energies)
+		disparity = max_energy / (min_energy + 1e-10)
+		return disparity
 
 	# Calculates AEve
 
