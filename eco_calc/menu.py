@@ -18,9 +18,9 @@ class Menu(tk.Tk):
 		self.geometry("1000x600")
 
 		# Font configuration
-		self.title_font = tkFont.Font(family="Helvetica", size=14, weight="bold")
-		self.label_font = tkFont.Font(family="Helvetica", size=14)
-		self.button_font = tkFont.Font(family="Helvetica", size=14)
+		self.title_font = tkFont.Font(family="Helvetica", size=13, weight="bold")
+		self.label_font = tkFont.Font(family="Helvetica", size=13)
+		self.button_font = tkFont.Font(family="Helvetica", size=13)
 
 		self.toolbar = Toolbar(self, self.title_font, self.label_font, self.button_font)
 		self.toolbar.pack(side="top", fill="x")

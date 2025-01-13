@@ -18,7 +18,7 @@ class AcousticTools:
 
 	# Calculates ACI based on parameters given.
 
-	def calculate_acoustic_index(folder, index_name, sample_rate=44100, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, num_bands=10): 
+	def calculate_acoustic_index(folder, index_name, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, num_bands=10): 
 		print("resolution:")
 		print(resolution_ms)
 		on_file = 0
