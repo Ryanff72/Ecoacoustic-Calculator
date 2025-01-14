@@ -9,6 +9,7 @@ from acoustic_tools import AcousticTools
 from toolbar import Toolbar
 from settings_page import SettingsPage
 from graph_page import GraphPage
+from instance_manager import InstanceManager
 
 class Menu(tk.Tk):
 
@@ -33,6 +34,7 @@ class Menu(tk.Tk):
 		for Page in (SettingsPage, GraphPage):
 			page_name = Page.__name__
 			frame = Page(parent=self.container, controller=self, title_font=self.title_font, label_font=self.label_font, button_font=self.button_font)
+			InstanceManager.set_instance(page_name, frame)
 			self.frames[page_name] = frame
 			frame.grid(row=0, column=0, sticky="nsew")
 
