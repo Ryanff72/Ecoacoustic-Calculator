@@ -33,7 +33,6 @@ class SettingsPage(tk.Frame):
 				+ self.AID_source,
 			"Bio": """Bioacoustic Index (Bio). Measures the number of peaks in the spectrogram, which is related to the number of sound sources. Highest values produced by blanket cicada noise, with high amplitude and minimal variation among frequency bands. Low values arise when there is no sound between 2 and 11 kHz, although there is sometimes insect biophony outside these bounds.\n""" 
 			+ self.AID_source
-			
 		}
 
 		left_frame = tk.Frame(self)
