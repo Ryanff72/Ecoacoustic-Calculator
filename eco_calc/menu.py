@@ -16,7 +16,7 @@ class Menu(tk.Tk):
 	def __init__(self):
 		super().__init__()
 		self.title("Ecoacoustic_Calculator")
-		self.geometry("1000x600")
+		self.geometry("1200x600")
 
 		# Font configuration
 		self.title_font = tkFont.Font(family="Helvetica", size=13, weight="bold")
