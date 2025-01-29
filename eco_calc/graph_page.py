@@ -1,10 +1,12 @@
 import ctypes
 import glob
 import tkinter as tk
+import numpy as np
 from tkinter import ttk
 import platform
 from directory_operations import DirectoryOperations
 from acoustic_tools import AcousticTools
+from scipy.interpolate import make_interp_spline
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
@@ -23,9 +25,9 @@ class GraphPage(tk.Frame):
 		self.left_frame.grid(row=0, column=0, sticky="nsew")
 		self.cur_graph_frame.grid(row=0, column=1, sticky="nsew")
 		
+		# Make it fill the screen
 		self.grid_columnconfigure(0, weight=1)
 		self.grid_columnconfigure(1, weight=2)
-		
 
 		# Left Column title
 		left_col_title = tk.Label(self.left_frame, text="Graph Options", font=title_font)
@@ -37,7 +39,7 @@ class GraphPage(tk.Frame):
 
 		# Line type label
 		left_col_title = tk.Label(self.left_frame, text="Line Type", font=label_font)
-		left_col_title.grid(row=1, column=0, padx=10, pady=(35, 5), sticky="nsew")
+		left_col_title.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
 
         # Select Line Type Dropdown
 		self.line_types = {"Solid Line" : "-", 
@@ -58,9 +60,25 @@ class GraphPage(tk.Frame):
 
 		# Line thickness box
 		self.line_thickness_box = tk.Entry(self.left_frame, width=10, font=label_font)
-		self.line_thickness_box.grid(row=4, column = 0, padx=10, pady=0, sticky="ns")
+		self.line_thickness_box.grid(row=4, column = 0, padx=10, pady=5, sticky="ns")
 		self.line_thickness_box.insert(0, "3")
 		self.line_thickness_box.bind("<Return>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
+
+		# Line type label
+		left_col_title = tk.Label(self.left_frame, text="Line Smoothness", font=label_font)
+		left_col_title.grid(row=5, column=0, padx=10, pady=5, sticky="nsew")
+
+        # Select Line Type Dropdown
+		self.line_smoothnesses = {"No Smoothing" : 0, 
+						   "Moderate Smoothing" : 50, 
+						   "High Smoothing" : 600}
+		self.line_smoothness_dropdown = ttk.Combobox(self.left_frame, values=list(self.line_smoothnesses.keys()), font=label_font)
+		self.line_smoothness_dropdown.grid(row=6, 
+									 column=0, 
+									 padx=10, 
+									 pady=5)	
+		self.line_smoothness_dropdown.set("No Smoothing")	
+		self.line_smoothness_dropdown.bind("<<ComboboxSelected>>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
 
 	def create_graph(self, index_name, indicies):
 		self.stored_index_name = index_name
@@ -68,6 +86,18 @@ class GraphPage(tk.Frame):
 		acoustic_index_figure = Figure(figsize=(5,4), dpi=120)
 		plt=acoustic_index_figure.add_subplot(111)
 		x_axis = list(range(1, len(indicies) + 1))
+
+		# make graph smooth
+		if (self.line_smoothnesses[self.line_smoothness_dropdown.get()] != 0):
+			x = np.array(x_axis)
+			y = np.array(indicies)
+			X_Y_Spline = make_interp_spline(x, y)
+			x = np.linspace(x.min(), x.max(), self.line_smoothnesses[self.line_smoothness_dropdown.get()])
+			y = X_Y_Spline(x)
+			indicies = y
+			x_axis = x
+
+		# plot data
 		plt.plot(x_axis, indicies, linestyle=self.line_types[self.line_type_dropdown.get()], linewidth=self.line_thickness_box.get(), marker='o')
 		plt.set_title(index_name)
 		plt.set_ylabel(index_name)
