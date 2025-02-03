@@ -42,10 +42,12 @@ class GraphPage(tk.Frame):
 		left_col_title.grid(row=1, column=0, padx=10, pady=2, sticky="nsew")
 
         # Select Line Type Dropdown
-		self.line_types = {"Solid Line" : "-", 
+		self.line_types = {
+						   "Solid Line" : "-", 
 						   "Dashed Line" : "--", 
 						   "Dash-dot Line" : "-.",
-						   "Dotted Line" : ":"}
+						   "Dotted Line" : ":"
+						   }
 		self.line_type_dropdown = ttk.Combobox(self.left_frame, values=list(self.line_types.keys()), font=label_font)
 		self.line_type_dropdown.grid(row=2, 
 									 column=0, 
@@ -65,8 +67,8 @@ class GraphPage(tk.Frame):
 		self.line_thickness_box.bind("<Return>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
 
 		# Line type label
-		left_col_title = tk.Label(self.left_frame, text="Line Smoothness", font=label_font)
-		left_col_title.grid(row=5, column=0, padx=10, pady=2, sticky="nsew")
+		line_type_title = tk.Label(self.left_frame, text="Line Smoothness", font=label_font)
+		line_type_title.grid(row=5, column=0, padx=10, pady=2, sticky="nsew")
 
         # Select Line Type Dropdown
 		self.line_smoothnesses = {
@@ -115,6 +117,25 @@ class GraphPage(tk.Frame):
 		self.line_marker_types_dropdown.set("Point")	
 		self.line_marker_types_dropdown.bind("<<ComboboxSelected>>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
 		
+		# Line color title
+		line_color_title = tk.Label(self.left_frame, text="R,G,B Colors (0-255)", font=label_font)
+		line_color_title.grid(row=11, column=0, padx=10, pady=2, sticky="nsew")
+
+		# Line color box
+		self.line_red_color_box = tk.Entry(self.left_frame, width=10, font=label_font)
+		self.line_red_color_box.grid(row=12, column = 0, padx=10, pady=2, sticky="ns")
+		self.line_red_color_box.insert(0, "50")
+		self.line_red_color_box.bind("<Return>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
+
+		self.line_green_color_box = tk.Entry(self.left_frame, width=10, font=label_font)
+		self.line_green_color_box.grid(row=13, column = 0, padx=10, pady=2, sticky="ns")
+		self.line_green_color_box.insert(0, "100")
+		self.line_green_color_box.bind("<Return>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
+
+		self.line_blue_color_box = tk.Entry(self.left_frame, width=10, font=label_font)
+		self.line_blue_color_box.grid(row=14, column = 0, padx=10, pady=2, sticky="ns")
+		self.line_blue_color_box.insert(0, "150")
+		self.line_blue_color_box.bind("<Return>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
 
 	def create_graph(self, index_name, indicies):
 		self.stored_index_name = index_name
@@ -140,7 +161,11 @@ class GraphPage(tk.Frame):
 			linestyle=self.line_types[self.line_type_dropdown.get()], 
 			linewidth=self.line_thickness_box.get(), 
 			markersize=self.marker_size_box.get(),
-			marker=self.line_marker_types[self.line_marker_types_dropdown.get()]
+			marker=self.line_marker_types[self.line_marker_types_dropdown.get()],
+			color=
+				(float(self.line_red_color_box.get()) / 255,
+				float(self.line_green_color_box.get()) / 255,
+				float(self.line_blue_color_box.get()) / 255)
 			)
 		plt.set_title(index_name)
 		plt.set_ylabel(index_name)
