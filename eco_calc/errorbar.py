@@ -11,6 +11,9 @@ class Errorbar(tk.Frame):
 	def __init__(self, parent, label_font):
 		super().__init__(parent)
 
-		# File Import Button
 		self.errortxt = tk.Label(self, text="Welcome to the Ecoacoustic Calculator!", borderwidth=2, relief=GROOVE, font=label_font)
 		self.errortxt.pack(side="left")
+
+	def update_text(self, text):
+		self.errortxt.config(text=text)
+		self.errortxt.update_idletasks()

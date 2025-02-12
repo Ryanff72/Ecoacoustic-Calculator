@@ -29,6 +29,7 @@ class Menu(tk.Tk):
 
 		self.errorbar = Errorbar(self, self.label_font)
 		self.errorbar.pack(side="bottom", anchor="w")
+		InstanceManager.set_instance(Errorbar.__name__, self.errorbar)
 
 		self.container = tk.Frame(self)	
 		self.container.pack(side="top", fill="both", expand=True)

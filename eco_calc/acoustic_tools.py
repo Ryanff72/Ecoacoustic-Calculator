@@ -9,6 +9,7 @@ from tkinter import messagebox
 from scipy.signal import spectrogram
 from scipy.signal import hilbert
 from scipy.io import wavfile
+from instance_manager import InstanceManager
 from pydub import AudioSegment
 import time
 import math
@@ -16,9 +17,12 @@ from utils.audio_chunk_to_librosa import AudioChunkToLibrosa
 
 class AcousticTools:
 
+	
 	# Calculates ACI based on parameters given.
 
 	def calculate_acoustic_index(folder, index_name, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, num_bands=10): 
+		errorbar = InstanceManager.get_instance("Errorbar")
+		errorbar.errortxt.config(text=f"sup")
 		print("resolution:")
 		print(resolution_ms)
 		on_file = 0
@@ -26,11 +30,13 @@ class AcousticTools:
 		file_count = len(glob.glob(os.path.join(folder, "*")))
 		index_values = []
 		start = time.time()
+		#errorbar.errortxt.config(text=f"Batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
 		for file in sorted(glob.glob(os.path.join(folder, "*"))):
 			on_file += 1
 			audio_chunk += AudioSegment.from_file(file)
 			if on_file % batch_size_in_file_count == 0 or on_file == file_count:
-				print(f"batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
+				errorbar.update_text(text=f"Batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
+				print(f"Batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
 				audio_signal, sr = AudioChunkToLibrosa.audio_chunk_to_librosa(audio_chunk)
 				chunks = AcousticTools.resolutionize(audio_signal, sr, resolution_ms)
 				totallen = 0
@@ -53,7 +59,10 @@ class AcousticTools:
 		end = time.time()
 		print(index_values)
 		print(f"that took {end - start} seconds.")	
+		errorbar.update_text(text=f"That took {end-start} seconds.")
 		return index_values
+	
+
 
 	# Splits an audio file into the chunks. The acoustic index of each chunk will be calculated
 	# seperately and be represented as a different data point.

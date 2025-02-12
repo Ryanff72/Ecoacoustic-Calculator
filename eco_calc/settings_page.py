@@ -6,6 +6,7 @@ import platform
 from directory_operations import DirectoryOperations
 from acoustic_tools import AcousticTools
 from graph_page import GraphPage
+from errorbar import Errorbar
 from instance_manager import InstanceManager
 
 class SettingsPage(tk.Frame):
@@ -111,8 +112,9 @@ class SettingsPage(tk.Frame):
 				num_bands=int(self.num_bands_entry_box.get()))
 			InstanceManager.get_instance("GraphPage").create_graph(self.acoustic_index_dropdown.get(), self.acoustic_index_result)
 		except Exception as e:
+			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"{e}")
 			print(e)
 
 	def update_calculate_button(event, button, index):
 		button.config(text=f"Calculate {index}")
-		InstanceManager.get_instance("SettingsPage").acoustic_index_description_label.config(text=InstanceManager.get_instance("SettingsPage").acoustic_index_descriptions.get(index))
+		InstanceManager.get_instance(SettingsPage.__name__).acoustic_index_description_label.config(text=InstanceManager.get_instance("SettingsPage").acoustic_index_descriptions.get(index))
