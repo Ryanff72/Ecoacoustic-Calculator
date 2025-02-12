@@ -52,6 +52,7 @@ class SettingsPage(tk.Frame):
         # Calculate Index Dropdown
 		indices = ["ACI", "ADI", "H","AEve", "M", "NDSI", "Bio"]
 		self.acoustic_index_dropdown = ttk.Combobox(left_frame, values=indices, font=label_font)
+		self.acoustic_index_dropdown.set("ACI")
 		self.acoustic_index_dropdown.grid(row=1, column=0, padx=10, pady=10)	
 		self.acoustic_index_dropdown.bind("<<ComboboxSelected>>", lambda event: SettingsPage.update_calculate_button(event, calculate_index_button, self.acoustic_index_dropdown.get()))
 
@@ -100,14 +101,17 @@ class SettingsPage(tk.Frame):
 		calculate_index_button.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
 	
 	def calculate_index(self):
-		self.acoustic_index_result = AcousticTools.calculate_acoustic_index(DirectoryOperations.target_audio_folder,
-			index_name=self.acoustic_index_dropdown.get(), 
-			resolution_ms=int(float(self.resolution_entry_box.get()) * 1000), 
-			batch_size_in_file_count=int(self.batch_size_entry_box.get()), 
-			fft_window_size=int(self.fft_window_size_entry_box.get()), 
-			hop_length=int(self.hop_length_entry_box.get()),
-			num_bands=int(self.num_bands_entry_box.get()))
-		InstanceManager.get_instance("GraphPage").create_graph(self.acoustic_index_dropdown.get(), self.acoustic_index_result)
+		try:
+			self.acoustic_index_result = AcousticTools.calculate_acoustic_index(DirectoryOperations.target_audio_folder,
+				index_name=self.acoustic_index_dropdown.get(), 
+				resolution_ms=int(float(self.resolution_entry_box.get()) * 1000), 
+				batch_size_in_file_count=int(self.batch_size_entry_box.get()), 
+				fft_window_size=int(self.fft_window_size_entry_box.get()), 
+				hop_length=int(self.hop_length_entry_box.get()),
+				num_bands=int(self.num_bands_entry_box.get()))
+			InstanceManager.get_instance("GraphPage").create_graph(self.acoustic_index_dropdown.get(), self.acoustic_index_result)
+		except Exception as e:
+			print(e)
 
 	def update_calculate_button(event, button, index):
 		button.config(text=f"Calculate {index}")
