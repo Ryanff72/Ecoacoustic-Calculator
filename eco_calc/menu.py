@@ -7,6 +7,7 @@ import platform
 from directory_operations import DirectoryOperations
 from acoustic_tools import AcousticTools
 from toolbar import Toolbar
+from errorbar import Errorbar
 from settings_page import SettingsPage
 from graph_page import GraphPage
 from instance_manager import InstanceManager
@@ -25,6 +26,9 @@ class Menu(tk.Tk):
 
 		self.toolbar = Toolbar(self, self.title_font, self.label_font, self.button_font)
 		self.toolbar.pack(side="top", fill="x")
+
+		self.errorbar = Errorbar(self, self.label_font)
+		self.errorbar.pack(side="bottom", anchor="w")
 
 		self.container = tk.Frame(self)	
 		self.container.pack(side="top", fill="both", expand=True)
