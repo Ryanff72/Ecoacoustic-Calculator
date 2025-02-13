@@ -111,8 +111,11 @@ class SettingsPage(tk.Frame):
 				hop_length=int(self.hop_length_entry_box.get()),
 				num_bands=int(self.num_bands_entry_box.get()))
 			InstanceManager.get_instance("GraphPage").create_graph(self.acoustic_index_dropdown.get(), self.acoustic_index_result)
+		except IsADirectoryError as e:
+			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Please select a folder using 'File': {e}")
+			print(e)
 		except Exception as e:
-			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"{e}")
+			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Unknown Error: {e}")
 			print(e)
 
 	def update_calculate_button(event, button, index):
