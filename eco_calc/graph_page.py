@@ -137,6 +137,8 @@ class GraphPage(tk.Frame):
 		self.line_blue_color_box.insert(0, "150")
 		self.line_blue_color_box.bind("<Return>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
 
+		self.create_graph(self.stored_index_name, self.stored_indices)
+
 	def create_graph(self, index_name, indicies):
 		self.stored_index_name = index_name
 		self.stored_indices = indicies
