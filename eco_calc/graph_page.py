@@ -3,6 +3,7 @@ import glob
 import tkinter as tk
 import numpy as np
 from tkinter import ttk
+from tkinter import GROOVE
 import platform
 from directory_operations import DirectoryOperations
 from acoustic_tools import AcousticTools
@@ -16,14 +17,14 @@ class GraphPage(tk.Frame):
 		
 		# store the data points so we can recreate the graph
 		self.stored_indices = []
-		self.stored_index_name = "ACI"
+		self.stored_index_name = ""
 		self.previous_graph_widget = 0
 
-		self.cur_graph_frame = tk.Frame(self)
-		self.left_frame = tk.Frame(self)
+		self.cur_graph_frame = tk.Frame(self, borderwidth=2, relief=GROOVE)
+		self.left_frame = tk.Frame(self, borderwidth=2, relief=GROOVE)
 
 		self.left_frame.grid(row=0, column=0, sticky="nsew")
-		self.cur_graph_frame.grid(row=0, column=1, sticky="nsew")
+		self.cur_graph_frame.grid(row=0, column=1, sticky="ew")
 		
 		# Make it fill the screen
 		self.grid_columnconfigure(0, weight=1)
@@ -35,7 +36,7 @@ class GraphPage(tk.Frame):
 
 		# Graph Column title
 		graph_col_title = tk.Label(self.cur_graph_frame, text="Graph", font=title_font)
-		graph_col_title.grid(row=0, column=1, padx=10, pady=(35, 5), sticky="nsew")
+		graph_col_title.grid(row=0, column=1, padx=(60,0), pady=(35, 5), sticky="nsew")
 
 		# Line type label
 		left_col_title = tk.Label(self.left_frame, text="Line Type", font=label_font)
@@ -142,7 +143,7 @@ class GraphPage(tk.Frame):
 	def create_graph(self, index_name, indicies):
 		self.stored_index_name = index_name
 		self.stored_indices = indicies
-		acoustic_index_figure = Figure(figsize=(5,4), dpi=120)
+		acoustic_index_figure = Figure(figsize=(6,4.5), dpi=120)
 		plt=acoustic_index_figure.add_subplot(111)
 		x_axis = list(range(1, len(indicies) + 1))
 
@@ -176,7 +177,7 @@ class GraphPage(tk.Frame):
 			self.previous_graph_widget.destroy()
 		canvas = FigureCanvasTkAgg(acoustic_index_figure, master=self.cur_graph_frame)
 		canvas_widget = canvas.get_tk_widget()
-		canvas_widget.grid(row=1, column=1, padx=30, pady=30, sticky="nsew")
+		canvas_widget.grid(row=1, column=1, padx=(50,0), pady=0, sticky="nesw")
 		self.previous_graph_widget = canvas_widget
 		canvas.draw()
 

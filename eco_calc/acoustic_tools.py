@@ -64,7 +64,7 @@ class AcousticTools:
 	
 
 
-	# Splits an audio file into the chunks. The acoustic index of each chunk will be calculated
+	# Splits an audio file into chunks. The acoustic index of each chunk will be calculated
 	# seperately and be represented as a different data point.
 
 	def calculate_aci(sr, fft_window_size, hop_length, audio):
