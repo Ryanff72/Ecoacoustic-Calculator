@@ -146,7 +146,6 @@ class GraphPage(tk.Frame):
 		acoustic_index_figure = Figure(figsize=(6,4.5), dpi=120)
 		plt=acoustic_index_figure.add_subplot(111)
 		x_axis = list(range(1, len(indicies) + 1))
-
 		# make graph smooth
 		if (self.line_smoothnesses[self.line_smoothness_dropdown.get()] != 0):
 			x = np.array(x_axis)
@@ -156,7 +155,6 @@ class GraphPage(tk.Frame):
 			y = X_Y_Spline(x)
 			indicies = y
 			x_axis = x
-
 		# plot data
 		plt.plot(
 			x_axis, 
@@ -170,6 +168,9 @@ class GraphPage(tk.Frame):
 				float(self.line_green_color_box.get()) / 255,
 				float(self.line_blue_color_box.get()) / 255)
 			)
+		plt.set_yscale('linear')
+		plt.yaxis.get_major_formatter().set_useOffset(False)
+		plt.yaxis.get_major_formatter().set_scientific(False)
 		plt.set_title(index_name)
 		plt.set_ylabel(index_name)
 		plt.set_xlabel("Chunk Count")

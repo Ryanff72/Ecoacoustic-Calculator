@@ -15,5 +15,6 @@ class Errorbar(tk.Frame):
 		self.errortxt.pack(side="left")
 
 	def update_text(self, text):
+		self.errortxt.config(text="")
 		self.errortxt.config(text=text)
 		self.errortxt.update_idletasks()

@@ -93,6 +93,20 @@ class SettingsPage(tk.Frame):
 		self.num_bands_entry_box.grid(row=10, column=1, padx=10, pady=0, sticky="ns")
 		self.num_bands_entry_box.insert(0, "10")
 
+		# Min Frequency Hz
+		min_freq_label = tk.Label(right_frame, text="Minimum Frequency Hz (Frequencies lower than this will not be considered.)", font=label_font)
+		min_freq_label.grid(row=11, column=1, padx=10, pady=5, sticky="nsw")
+		self.min_freq_entry_box = tk.Entry(right_frame, width=10, font=label_font)
+		self.min_freq_entry_box.grid(row=12, column=1, padx=10, pady=0, sticky="ns")
+		self.min_freq_entry_box.insert(0, "20")
+
+		# Max Frequency Hz
+		max_freq_label = tk.Label(right_frame, text="Maximum Frequency Hz (Frequencies higher than this will not be considered.)", font=label_font)
+		max_freq_label.grid(row=13, column=1, padx=10, pady=5, sticky="nsw")
+		self.max_freq_entry_box = tk.Entry(right_frame, width=10, font=label_font)
+		self.max_freq_entry_box.grid(row=14, column=1, padx=10, pady=0, sticky="ns")
+		self.max_freq_entry_box.insert(0, "20000")
+
 		# Acoustic Index Description Label
 		self.acoustic_index_description_label = tk.Label(left_frame, text=self.acoustic_index_descriptions.get(self.acoustic_index_dropdown.get()), font=label_font, wraplength=350, justify="left")
 		self.acoustic_index_description_label.grid(row=3, column=0, padx=10, pady=5, sticky="nsew")
@@ -109,14 +123,16 @@ class SettingsPage(tk.Frame):
 				batch_size_in_file_count=int(self.batch_size_entry_box.get()), 
 				fft_window_size=int(self.fft_window_size_entry_box.get()), 
 				hop_length=int(self.hop_length_entry_box.get()),
-				num_bands=int(self.num_bands_entry_box.get()))
+				num_bands=int(self.num_bands_entry_box.get()),
+				min_freq=int(self.min_freq_entry_box.get()),
+				max_freq=int(self.max_freq_entry_box.get()))
 			InstanceManager.get_instance("GraphPage").create_graph(self.acoustic_index_dropdown.get(), self.acoustic_index_result)
 		except IsADirectoryError as e:
 			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Please select a folder using 'File': {e}")
 			print(e)
-		except Exception as e:
-			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Unknown Error: {e}")
-			print(e)
+		#except Exception as e:
+		#	InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Unknown Error: {e}")
+		#	print(e)
 
 	def update_calculate_button(event, button, index):
 		button.config(text=f"Calculate {index}")
