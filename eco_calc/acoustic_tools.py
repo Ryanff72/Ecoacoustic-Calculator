@@ -61,6 +61,7 @@ class AcousticTools:
 					index_values.append(AcousticTools.calculate_bio(chunk, sr, num_bands, fft_window_size, hop_length))
 				audio_chunk = AudioSegment.empty()
 		end = time.time()
+		del self.mask
 		print(index_values)
 		print(f"that took {end - start} seconds.")	
 		errorbar.update_text(text=f"That took {end-start} seconds.")
