@@ -5,6 +5,7 @@ import os
 import librosa
 import numpy as np
 from numpy.fft import rfft, irfft
+from maad import sound, features
 import pyfftw.interfaces.numpy_fft as fft
 import tkinter as tk
 from tkinter import messagebox
@@ -67,8 +68,7 @@ class AcousticTools:
 		return index_values
 	
 
-
-	# Splits an audio file into chunks. The acoustic index of each chunk will be calculated
+	'''
 	# seperately and be represented as a different data point.
 
 	@classmethod
@@ -147,14 +147,14 @@ class AcousticTools:
 		return aeve
 
 	# Calculates median amplitude envelope
-
+'''
 	@classmethod
 	def calculate_m(self, audio):
 		signal = hilbert(audio)
 		amplitude_envelope = np.abs(signal)
 		m = np.median(amplitude_envelope)
 		return m
-
+'''
 	# Calculates median amplitude envelope
 
 	@classmethod
@@ -167,25 +167,26 @@ class AcousticTools:
 		biophony_energy = np.sum(stft[biophony_band, :] ** 2)
 		ndsi = (biophony_energy - anthrophony_energy) / (biophony_energy + anthrophony_energy + 1e-10) 
 		return ndsi
-	
-	# This function cuts off lowest and highest frequencies
+'''	
+	# This function cuts off lowest and highest frequencies (some modification is required to restore this functionality)
+	# TODO: optimize audio bandpass to make it so that it runs at an adequate speed.
 
 	# This function splits the combined audio clip into clips of desired length. also applies bandpass
-
 	def resolutionize(self, audio, sr, resolution_ms, min_freq, max_freq):
-		try:
-			self.mask
-		except AttributeError:
-			print("no mask!!!")
-			bins = len(audio) // 2 + 1
-			frequencies = np.linspace(0, sr / 2, bins, dtype=np.float32)
-			self.mask = ((frequencies >= min_freq) & (frequencies <= max_freq))
+		#try:
+			#self.mask
+		#except AttributeError:
+			#print("no mask!!!")
+			#bins = len(audio) // 2 + 1
+			#frequencies = np.linspace(0, sr / 2, bins, dtype=np.float32)
+			#self.mask = ((frequencies >= min_freq) & (frequencies <= max_freq))
 		audio_32 = audio.astype(np.float32, copy=False)
-		fft_data = fft.rfft(audio_32)
-		fft_data *= self.mask
-		bandpassed_audio = fft.irfft(fft_data, n=len(audio))
+		#fft_data = fft.rfft(audio_32)
+		#fft_data *= self.mask
+		#bandpassed_audio = fft.irfft(fft_data, n=len(audio))
+		processed_audio = audio_32
 		num_samples_per = int(sr * (resolution_ms / 1000.0))
-		total_samples = len(bandpassed_audio)	
+		total_samples = len(processed_audio)	
 		duration_ms = int((total_samples / sr) * 1000)
-		return [bandpassed_audio[start:start + resolution_ms] for start in range(0, total_samples, num_samples_per)]
+		return [processed_audio[start:start + resolution_ms] for start in range(0, total_samples, num_samples_per)]
 
