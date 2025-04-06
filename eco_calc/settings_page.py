@@ -93,19 +93,66 @@ class SettingsPage(tk.Frame):
 		self.num_bands_entry_box.grid(row=10, column=1, padx=10, pady=0, sticky="ns")
 		self.num_bands_entry_box.insert(0, "10")
 
-		# Min Frequency Hz
-		min_freq_label = tk.Label(right_frame, text="Minimum Frequency Hz (Frequencies lower than this will not be considered.)", font=label_font)
-		min_freq_label.grid(row=11, column=1, padx=10, pady=5, sticky="nsw")
-		self.min_freq_entry_box = tk.Entry(right_frame, width=10, font=label_font)
-		self.min_freq_entry_box.grid(row=12, column=1, padx=10, pady=0, sticky="ns")
+		# Bin Step
+		bin_step_label = tk.Label(right_frame, text="Bin Step (Number of bins when dividing the audio spectrum into frequency bands)", font=label_font)
+		bin_step_label.grid(row=9, column=1, padx=10, pady=5, sticky="nsw")
+		self.bin_step_entry_box = tk.Entry(right_frame, width=10, font=label_font)
+		self.bin_step_entry_box.grid(row=10, column=1, padx=10, pady=0, sticky="ns")
+		self.bin_step_entry_box.insert(0, "10")
+
+		# Frequency Range (Hz) Label
+		freq_range_label = tk.Label(right_frame, text="Frequency Range (Hz, min - max) (Frequencies outside this range will not be considered)", font=label_font)
+		freq_range_label.grid(row=13, column=1, padx=10, pady=5, sticky="nsw")
+
+		# Nested Frame for Entry Boxes
+		freq_frame = tk.Frame(right_frame)
+		freq_frame.grid(row=14, column=1, padx=10, pady=0, sticky="n")
+
+		# Min Frequency Entry
+		self.min_freq_entry_box = tk.Entry(freq_frame, width=10, font=label_font)
+		self.min_freq_entry_box.pack(side=tk.LEFT, padx=(0, 5))  # Left side, small gap to right
 		self.min_freq_entry_box.insert(0, "20")
 
-		# Max Frequency Hz
-		max_freq_label = tk.Label(right_frame, text="Maximum Frequency Hz (Frequencies higher than this will not be considered.)", font=label_font)
-		max_freq_label.grid(row=13, column=1, padx=10, pady=5, sticky="nsw")
-		self.max_freq_entry_box = tk.Entry(right_frame, width=10, font=label_font)
-		self.max_freq_entry_box.grid(row=14, column=1, padx=10, pady=0, sticky="ns")
+		# Max Frequency Entry (side by side with min)
+		self.max_freq_entry_box = tk.Entry(freq_frame, width=10, font=label_font)
+		self.max_freq_entry_box.pack(side=tk.LEFT, padx=(5, 0))  # Left side, small gap to left
 		self.max_freq_entry_box.insert(0, "20000")
+
+		# Biophony Range (Hz) Label
+		bio_range_label = tk.Label(right_frame, text="Biophony Range (Hz, min-max) (Frequency range for biological sounds)", font=label_font)
+		bio_range_label.grid(row=15, column=1, padx=10, pady=5, sticky="nsw")
+
+		# Nested Frame for Entry Boxes
+		bio_frame = tk.Frame(right_frame)
+		bio_frame.grid(row=16, column=1, padx=10, pady=0, sticky="n")
+
+		# Min Frequency Entry
+		self.min_bio_entry_box = tk.Entry(bio_frame, width=10, font=label_font)
+		self.min_bio_entry_box.pack(side=tk.LEFT, padx=(0, 5))  # Left side, small gap to right
+		self.min_bio_entry_box.insert(0, "20")
+
+		# Max Frequency Entry (side by side with min)
+		self.max_bio_entry_box = tk.Entry(bio_frame, width=10, font=label_font)
+		self.max_bio_entry_box.pack(side=tk.LEFT, padx=(5, 0))  # Left side, small gap to left
+		self.max_bio_entry_box.insert(0, "20000")
+
+		# Anthrophony Range (Hz) Label
+		anthro_range_label = tk.Label(right_frame, text="Anthrophony Range (Hz, min-max) (Frequency range for human-made sounds)", font=label_font)
+		anthro_range_label.grid(row=17, column=1, padx=10, pady=5, sticky="nsw")
+
+		# Nested Frame for Entry Boxes
+		anthro_frame = tk.Frame(right_frame)
+		anthro_frame.grid(row=18, column=1, padx=10, pady=0, sticky="n")
+
+		# Min Frequency Entry
+		self.min_anthro_entry_box = tk.Entry(anthro_frame, width=10, font=label_font)
+		self.min_anthro_entry_box.pack(side=tk.LEFT, padx=(0, 5))  # Left side, small gap to right
+		self.min_anthro_entry_box.insert(0, "20")
+
+		# Max Frequency Entry (side by side with min)
+		self.max_anthro_entry_box = tk.Entry(anthro_frame, width=10, font=label_font)
+		self.max_anthro_entry_box.pack(side=tk.LEFT, padx=(5, 0))  # Left side, small gap to left
+		self.max_anthro_entry_box.insert(0, "20000")
 
 		# Acoustic Index Description Label
 		self.acoustic_index_description_label = tk.Label(left_frame, text=self.acoustic_index_descriptions.get(self.acoustic_index_dropdown.get()), font=label_font, wraplength=350, justify="left")
@@ -117,18 +164,27 @@ class SettingsPage(tk.Frame):
 	
 	def calculate_index(self):
 		try:
-			self.acoustic_index_result = AcousticTools.calculate_acoustic_index(DirectoryOperations.target_audio_folder,
+			self.acoustic_index_result = AcousticTools.calculate_acoustic_index(
+				DirectoryOperations.target_audio_folder,
 				index_name=self.acoustic_index_dropdown.get(), 
 				resolution_ms=int(float(self.resolution_entry_box.get()) * 1000), 
 				batch_size_in_file_count=int(self.batch_size_entry_box.get()), 
 				fft_window_size=int(self.fft_window_size_entry_box.get()), 
 				hop_length=int(self.hop_length_entry_box.get()),
-				num_bands=int(self.num_bands_entry_box.get()),
+				bin_step=int(self.bin_step_entry_box.get()),
 				min_freq=int(self.min_freq_entry_box.get()),
-				max_freq=int(self.max_freq_entry_box.get()))
+				max_freq=int(self.max_freq_entry_box.get()),
+				min_bio=int(self.min_bio_entry_box.get()),
+				max_bio=int(self.max_bio_entry_box.get()),
+				min_anthro=int(self.min_anthro_entry_box.get()),
+				max_anthro=int(self.max_anthro_entry_box.get())
+			)
 			InstanceManager.get_instance("GraphPage").create_graph(self.acoustic_index_dropdown.get(), self.acoustic_index_result)
 		except IsADirectoryError as e:
 			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Please select a folder using 'File': {e}")
+			print(e)
+		except PermissionError as e:
+			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Permission error. Select a different file 'File': {e}")
 			print(e)
 		#except Exception as e:
 		#	InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Unknown Error: {e}")
