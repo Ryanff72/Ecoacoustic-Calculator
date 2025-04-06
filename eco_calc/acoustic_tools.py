@@ -1,7 +1,9 @@
 import ctypes
+import socket
 from tkinter import filedialog
 import glob
 import os
+import json
 import librosa
 import numpy as np
 import multiprocessing as mp
@@ -18,13 +20,85 @@ from scipy.io import wavfile
 from instance_manager import InstanceManager
 from pydub import AudioSegment
 import time
+import zlib
 import math
+from concurrent.futures import ThreadPoolExecutor
 from utils.audio_chunk_to_librosa import AudioChunkToLibrosa
 
 class AcousticTools:
-
 	# some stored values to speed up calculations
+	@classmethod
+	def calculate_acoustic_index_server(self, folder, host, port, index_name, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, min_freq=20, max_freq=20000, bin_step=1000, min_bio=2000, max_bio=11000, min_anthro=1000, max_anthro=2000):
+		errorbar = InstanceManager.get_instance("Errorbar")
+		on_file = 0
+		audio_chunk = AudioSegment.empty()
+		file_count = len(glob.glob(os.path.join(folder, "*")))
+		index_values = []
+		start = time.time()
 
+		port = int(port)
+
+		files = sorted(glob.glob(os.path.join(folder, "*")))
+		file_count = len(files)
+		for i in range(0, file_count, batch_size_in_file_count):
+		    batch_files = files[i:i + batch_size_in_file_count]
+		    on_file = i + len(batch_files)
+		    errorbar.update_text(text=f"Batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
+
+		    # Parallel file loading
+		    def load_file(file):
+		        return AudioSegment.from_file(file)
+		    with ThreadPoolExecutor() as executor:
+		        audio_chunks = list(executor.map(load_file, batch_files))
+		    audio_chunk = sum(audio_chunks, AudioSegment.empty())
+
+		    # Downsample and compress
+		    audio_signal, sr = AudioChunkToLibrosa.audio_chunk_to_librosa(audio_chunk)
+		    audio_signal = librosa.resample(audio_signal, orig_sr=sr, target_sr=16000)
+		    sr = 16000
+
+		    index_map = {"ACI": 0, "ADI": 1, "H": 2, "AEve": 3, "M": 4, "NDSI": 5, "Bio": 6}
+		    params = np.array([
+		        index_map.get(index_name, 0), fft_window_size, hop_length, resolution_ms,
+		        min_freq, max_freq, bin_step, min_bio, max_bio, min_anthro, max_anthro
+		    ], dtype=np.int32)
+		    compressed_data = zlib.compress(audio_signal.tobytes())
+		    data = (
+		        sr.to_bytes(4, 'big') +
+		        len(params.tobytes()).to_bytes(4, 'big') +
+		        params.tobytes() +
+		        compressed_data
+		    )
+
+		    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+		        s.settimeout(30)
+		        s.connect((host, port))
+		        s.send(len(data).to_bytes(4, 'big') + data)
+
+		        size_data = s.recv(4)
+		        if not size_data:
+		            print("No response size")
+		            index_values.extend([0.0])
+		            continue
+		        data_size = int.from_bytes(size_data, 'big')
+
+		        response_data = b""
+		        while len(response_data) < data_size:
+		            packet = s.recv(min(data_size - len(response_data), 65536))
+		            if not packet:
+		                print("Incomplete response")
+		                break
+		            response_data += packet
+
+		        if response_data:
+		            index_values.extend(np.frombuffer(response_data, dtype=np.float64))
+		        else:
+		            print("Empty response")
+		            index_values.append(0.0)
+
+		end = time.time()
+		errorbar.update_text(text=f"That took {end - start} seconds for {file_count} files.")
+		return index_values
 
 	@classmethod
 	def calculate_acoustic_index(self, folder, index_name, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, min_freq=20, max_freq=20000, bin_step=1000, min_bio=2000, max_bio=11000, min_anthro=1000, max_anthro = 2000): 
@@ -47,42 +121,35 @@ class AcousticTools:
 				def compute_index(chunk):
 					if index_name == "ACI":
 						_, _, aci = features.acoustic_complexity_index(Sxx)
-						index_values.append(aci)
-						#index_values.append(AcousticTools.calculate_aci(sr, fft_window_size, hop_length, chunk))
+						return aci
 					elif index_name == "ADI":
 						adi = features.acoustic_diversity_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
-						index_values.append(adi)
-						#index_values.append(AcousticTools.calculate_adi(chunk, sr, num_bands, fft_window_size, hop_length))
+						return adi[0] if isinstance(adi, tuple) else adi
 					elif index_name == "H":
 						h, _ = features.frequency_entropy(Sxx)
-						index_values.append(h)
-						#index_values.append(AcousticTools.calculate_shannon_diversity_index(chunk, sr, num_bands))
+						return h
 					elif index_name == "AEve":
 						aeve = features.acoustic_eveness_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
-						index_values.append(aeve)
-						#index_values.append(AcousticTools.calculate_aeve(chunk, sr, num_bands))
+						return aeve[0] if isinstance(aeve, tuple) else aeve
 					elif index_name == "M":
-						index_values.append(AcousticTools.calculate_m(chunk))
+						return AcousticTools.calculate_m(chunk)
 					elif index_name == "NDSI":
-						ndsi, _, _ =features.soundscape_index(Sxx, fn, flim_bioPh=(min_bio, max_bio), flim_antroPh=(min_anthro, max_anthro))
-						index_values.append(ndsi)
-						#index_values.append(AcousticTools.calculate_ndsi(chunk, sr, num_bands, fft_window_size, hop_length))
+						ndsi, _, _ = features.soundscape_index(Sxx, fn, flim_bioPh=(min_bio, max_bio), flim_antroPh=(min_anthro, max_anthro))
+						return ndsi
 					elif index_name == "Bio":
 						bio = features.bioacoustics_index(Sxx, fn, flim=[min_freq, max_freq])
-						index_values.append(bio)
-						#index_values.append(AcousticTools.calculate_bio(chunk, sr, num_bands, fft_window_size, hop_length))
-					else:
-						audio_chunk = AudioSegment.empty()
-						return None
+						return bio
+					return 0.0  # Default for invalid index_name
 
-				from concurrent.futures import ThreadPoolExecutor
-				with ThreadPoolExecutor(max_workers=min(len(chunks), os.cpu_count() or 4)) as executor:
-					index_values.extend(executor.map(compute_index, chunks))
+			from concurrent.futures import ThreadPoolExecutor
+			with ThreadPoolExecutor(max_workers=min(len(chunks), os.cpu_count() or 4)) as executor:
+				index_values.extend(executor.map(compute_index, chunks))
 
-				audio_chunk = AudioSegment.empty()
+			audio_chunk = AudioSegment.empty()
 
 		end = time.time()
 		errorbar.update_text(text=f"That took {end - start} seconds.")
+		print(index_values)
 		return index_values
 	
 	# This function cuts off lowest and highest frequencies (some modification is required to restore this functionality)

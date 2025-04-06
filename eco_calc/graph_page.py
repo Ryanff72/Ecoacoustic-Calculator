@@ -2,7 +2,7 @@ import ctypes
 import glob
 import tkinter as tk
 import numpy as np
-from tkinter import ttk
+from tkinter import ttk, filedialog
 from tkinter import GROOVE
 import platform
 from directory_operations import DirectoryOperations
@@ -18,7 +18,9 @@ class GraphPage(tk.Frame):
 		# store the data points so we can recreate the graph
 		self.stored_indices = []
 		self.stored_index_name = ""
+		self.previous_graph_widget = None
 		self.previous_graph_widget = 0
+		self.fig = None
 
 		self.cur_graph_frame = tk.Frame(self, borderwidth=2, relief=GROOVE)
 		self.left_frame = tk.Frame(self, borderwidth=2, relief=GROOVE)
@@ -74,7 +76,7 @@ class GraphPage(tk.Frame):
         # Select Line Type Dropdown
 		self.line_smoothnesses = {
 							"No Smoothing" : 0, 
-						    "Moderate Smoothing" : 30, 
+						    "Moderate Smoothing" : 40, 
 						   	"High Smoothing" : 500
 						}
 		self.line_smoothness_dropdown = ttk.Combobox(self.left_frame, values=list(self.line_smoothnesses.keys()), font=label_font)
@@ -138,12 +140,16 @@ class GraphPage(tk.Frame):
 		self.line_blue_color_box.insert(0, "150")
 		self.line_blue_color_box.bind("<Return>", lambda event: self.create_graph(self.stored_index_name, self.stored_indices))
 
+		self.save_button = tk.Button(self.cur_graph_frame, text="Save Graph As", font=button_font, command=self.save_graph)
+		self.save_button.grid(row=2, column=1, padx = (50,0), pady=2, sticky="n")
+
 		self.create_graph(self.stored_index_name, self.stored_indices)
 
 	def create_graph(self, index_name, indicies):
 		self.stored_index_name = index_name
 		self.stored_indices = indicies
 		acoustic_index_figure = Figure(figsize=(6,4.5), dpi=120)
+		self.fig=acoustic_index_figure
 		plt=acoustic_index_figure.add_subplot(111)
 		x_axis = list(range(1, len(indicies) + 1))
 		# make graph smooth
@@ -181,6 +187,24 @@ class GraphPage(tk.Frame):
 		canvas_widget.grid(row=1, column=1, padx=(50,0), pady=0, sticky="nesw")
 		self.previous_graph_widget = canvas_widget
 		canvas.draw()
+	
+	def save_graph(self):
+		file_path = filedialog.asksaveasfilename(
+			defaultextension=".png",
+			filetypes=[
+				("PNG files", "*.png"), 
+				("JPEG files", "*.jpg"), 
+				("PDF files", "*.pdf"),
+				("All files", "*.*")
+				]
+		)
+		if (file_path):
+			try:
+				self.fig.savefig(file_path, dpi=120, bbox_inches='tight')
+				tk.messagebox.showinfo("Saved Sucessfully", f"Graph saved to {file_path}")
+			except Exception as e:
+				tk.messagebox.showerror("Not Saved Sucessfully", f"Graph not saved: {e}")
+
 
 	def update_calculate_button(event, button, index):
 		button.config(text=f"Calculate {index}")

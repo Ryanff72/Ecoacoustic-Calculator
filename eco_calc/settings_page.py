@@ -86,13 +86,6 @@ class SettingsPage(tk.Frame):
 		self.hop_length_entry_box.grid(row=8, column=1, padx=10, pady=0, sticky="ns")
 		self.hop_length_entry_box.insert(0, "512")
 
-		# Number of Bands
-		num_bands_label = tk.Label(right_frame, text="Number of Bands (Number of frequency bands for analysis)", font=label_font)
-		num_bands_label.grid(row=9, column=1, padx=10, pady=5, sticky="nsw")
-		self.num_bands_entry_box = tk.Entry(right_frame, width=10, font=label_font)
-		self.num_bands_entry_box.grid(row=10, column=1, padx=10, pady=0, sticky="ns")
-		self.num_bands_entry_box.insert(0, "10")
-
 		# Bin Step
 		bin_step_label = tk.Label(right_frame, text="Bin Step (Number of bins when dividing the audio spectrum into frequency bands)", font=label_font)
 		bin_step_label.grid(row=9, column=1, padx=10, pady=5, sticky="nsw")
@@ -122,7 +115,6 @@ class SettingsPage(tk.Frame):
 		bio_range_label = tk.Label(right_frame, text="Biophony Range (Hz, min-max) (Frequency range for biological sounds)", font=label_font)
 		bio_range_label.grid(row=15, column=1, padx=10, pady=5, sticky="nsw")
 
-		# Nested Frame for Entry Boxes
 		bio_frame = tk.Frame(right_frame)
 		bio_frame.grid(row=16, column=1, padx=10, pady=0, sticky="n")
 
@@ -140,7 +132,6 @@ class SettingsPage(tk.Frame):
 		anthro_range_label = tk.Label(right_frame, text="Anthrophony Range (Hz, min-max) (Frequency range for human-made sounds)", font=label_font)
 		anthro_range_label.grid(row=17, column=1, padx=10, pady=5, sticky="nsw")
 
-		# Nested Frame for Entry Boxes
 		anthro_frame = tk.Frame(right_frame)
 		anthro_frame.grid(row=18, column=1, padx=10, pady=0, sticky="n")
 
@@ -154,6 +145,13 @@ class SettingsPage(tk.Frame):
 		self.max_anthro_entry_box.pack(side=tk.LEFT, padx=(5, 0))  # Left side, small gap to left
 		self.max_anthro_entry_box.insert(0, "20000")
 
+		# Bin Step
+		server_label = tk.Label(right_frame, text="Calculate where? (Change localhost to IP for remote computation)", font=label_font)
+		server_label.grid(row=19, column=1, padx=10, pady=5, sticky="nsw")
+		self.ip_entry_box = tk.Entry(right_frame, width=30, font=label_font)
+		self.ip_entry_box.grid(row=20, column=1, padx=10, pady=0, sticky="ns")
+		self.ip_entry_box.insert(0, "localhost:5000")
+
 		# Acoustic Index Description Label
 		self.acoustic_index_description_label = tk.Label(left_frame, text=self.acoustic_index_descriptions.get(self.acoustic_index_dropdown.get()), font=label_font, wraplength=350, justify="left")
 		self.acoustic_index_description_label.grid(row=3, column=0, padx=10, pady=5, sticky="nsew")
@@ -164,21 +162,41 @@ class SettingsPage(tk.Frame):
 	
 	def calculate_index(self):
 		try:
-			self.acoustic_index_result = AcousticTools.calculate_acoustic_index(
-				DirectoryOperations.target_audio_folder,
-				index_name=self.acoustic_index_dropdown.get(), 
-				resolution_ms=int(float(self.resolution_entry_box.get()) * 1000), 
-				batch_size_in_file_count=int(self.batch_size_entry_box.get()), 
-				fft_window_size=int(self.fft_window_size_entry_box.get()), 
-				hop_length=int(self.hop_length_entry_box.get()),
-				bin_step=int(self.bin_step_entry_box.get()),
-				min_freq=int(self.min_freq_entry_box.get()),
-				max_freq=int(self.max_freq_entry_box.get()),
-				min_bio=int(self.min_bio_entry_box.get()),
-				max_bio=int(self.max_bio_entry_box.get()),
-				min_anthro=int(self.min_anthro_entry_box.get()),
-				max_anthro=int(self.max_anthro_entry_box.get())
-			)
+			host, port = self.ip_entry_box.get().split(':')
+			if (host == "localhost"):
+				self.acoustic_index_result = AcousticTools.calculate_acoustic_index(
+					DirectoryOperations.target_audio_folder,
+					index_name=self.acoustic_index_dropdown.get(), 
+					resolution_ms=int(float(self.resolution_entry_box.get()) * 1000), 
+					batch_size_in_file_count=int(self.batch_size_entry_box.get()), 
+					fft_window_size=int(self.fft_window_size_entry_box.get()), 
+					hop_length=int(self.hop_length_entry_box.get()),
+					bin_step=int(self.bin_step_entry_box.get()),
+					min_freq=int(self.min_freq_entry_box.get()),
+					max_freq=int(self.max_freq_entry_box.get()),
+					min_bio=int(self.min_bio_entry_box.get()),
+					max_bio=int(self.max_bio_entry_box.get()),
+					min_anthro=int(self.min_anthro_entry_box.get()),
+					max_anthro=int(self.max_anthro_entry_box.get())
+				)
+			else:
+				self.acoustic_index_result = AcousticTools.calculate_acoustic_index_server(
+					DirectoryOperations.target_audio_folder,
+					host=host,
+					port=port,
+					index_name=self.acoustic_index_dropdown.get(), 
+					resolution_ms=int(float(self.resolution_entry_box.get()) * 1000), 
+					batch_size_in_file_count=int(self.batch_size_entry_box.get()), 
+					fft_window_size=int(self.fft_window_size_entry_box.get()), 
+					hop_length=int(self.hop_length_entry_box.get()),
+					bin_step=int(self.bin_step_entry_box.get()),
+					min_freq=int(self.min_freq_entry_box.get()),
+					max_freq=int(self.max_freq_entry_box.get()),
+					min_bio=int(self.min_bio_entry_box.get()),
+					max_bio=int(self.max_bio_entry_box.get()),
+					min_anthro=int(self.min_anthro_entry_box.get()),
+					max_anthro=int(self.max_anthro_entry_box.get())
+				)
 			InstanceManager.get_instance("GraphPage").create_graph(self.acoustic_index_dropdown.get(), self.acoustic_index_result)
 		except IsADirectoryError as e:
 			InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Please select a folder using 'File': {e}")
@@ -189,6 +207,7 @@ class SettingsPage(tk.Frame):
 		#except Exception as e:
 		#	InstanceManager.get_instance(Errorbar.__name__).update_text(text=f"Unknown Error: {e}")
 		#	print(e)
+
 
 	def update_calculate_button(event, button, index):
 		button.config(text=f"Calculate {index}")
