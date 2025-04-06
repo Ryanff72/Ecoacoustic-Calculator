@@ -114,32 +114,32 @@ class AcousticTools:
 			audio_chunk += AudioSegment.from_file(file)
 			if on_file % batch_size_in_file_count == 0 or on_file == file_count:
 				errorbar.update_text(text=f"Batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
-				audio_signal, sr = AudioChunkToLibrosa.audio_chunk_to_librosa(audio_chunk)
-				chunks = AcousticTools.resolutionize(self, audio_signal, sr, resolution_ms, min_freq, max_freq)
-				Sxx, tn, fn, _ = sound.spectrogram(audio_signal, sr, nperseg=fft_window_size, noverlap=fft_window_size - hop_length)
+			audio_signal, sr = AudioChunkToLibrosa.audio_chunk_to_librosa(audio_chunk)
+			chunks = AcousticTools.resolutionize(self, audio_signal, sr, resolution_ms, min_freq, max_freq)
+			Sxx, tn, fn, _ = sound.spectrogram(audio_signal, sr, nperseg=fft_window_size, noverlap=fft_window_size - hop_length)
 
-				def compute_index(chunk):
-					if index_name == "ACI":
-						_, _, aci = features.acoustic_complexity_index(Sxx)
-						return aci
-					elif index_name == "ADI":
-						adi = features.acoustic_diversity_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
-						return adi[0] if isinstance(adi, tuple) else adi
-					elif index_name == "H":
-						h, _ = features.frequency_entropy(Sxx)
-						return h
-					elif index_name == "AEve":
-						aeve = features.acoustic_eveness_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
-						return aeve[0] if isinstance(aeve, tuple) else aeve
-					elif index_name == "M":
-						return AcousticTools.calculate_m(chunk)
-					elif index_name == "NDSI":
-						ndsi, _, _ = features.soundscape_index(Sxx, fn, flim_bioPh=(min_bio, max_bio), flim_antroPh=(min_anthro, max_anthro))
-						return ndsi
-					elif index_name == "Bio":
-						bio = features.bioacoustics_index(Sxx, fn, flim=[min_freq, max_freq])
-						return bio
-					return 0.0  # Default for invalid index_name
+			def compute_index(chunk):
+				if index_name == "ACI":
+					_, _, aci = features.acoustic_complexity_index(Sxx)
+					return aci
+				elif index_name == "ADI":
+					adi = features.acoustic_diversity_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
+					return adi[0] if isinstance(adi, tuple) else adi
+				elif index_name == "H":
+					h, _ = features.frequency_entropy(Sxx)
+					return h
+				elif index_name == "AEve":
+					aeve = features.acoustic_eveness_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
+					return aeve[0] if isinstance(aeve, tuple) else aeve
+				elif index_name == "M":
+					return AcousticTools.calculate_m(chunk)
+				elif index_name == "NDSI":
+					ndsi, _, _, _ = features.soundscape_index(Sxx, fn, flim_bioPh=(min_bio, max_bio), flim_antroPh=(min_anthro, max_anthro))
+					return ndsi
+				elif index_name == "Bio":
+					bio = features.bioacoustics_index(Sxx, fn, flim=[min_freq, max_freq])
+					return bio
+				return 0.0  # Default for invalid index_name
 
 			from concurrent.futures import ThreadPoolExecutor
 			with ThreadPoolExecutor(max_workers=min(len(chunks), os.cpu_count() or 4)) as executor:
