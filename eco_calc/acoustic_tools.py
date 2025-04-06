@@ -4,6 +4,8 @@ import glob
 import os
 import librosa
 import numpy as np
+import multiprocessing as mp
+from multiprocessing import Pool, Manager
 from numpy.fft import rfft, irfft
 from maad import sound, features
 import pyfftw.interfaces.numpy_fft as fft
@@ -24,10 +26,92 @@ class AcousticTools:
 	# some stored values to speed up calculations
 
 
-	# Calculates ACI based on parameters given.
-
 	@classmethod
-	def calculate_acoustic_index(self, folder, index_name, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, num_bands=10, min_freq=20, max_freq=20000): 
+	def calculate_acoustic_index(self, folder, index_name, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, min_freq=20, max_freq=20000, bin_step=1000, min_bio=2000, max_bio=11000, min_anthro=1000, max_anthro = 2000): 
+		errorbar = InstanceManager.get_instance("Errorbar")
+		on_file = 0
+		audio_chunk = AudioSegment.empty()
+		file_count = len(glob.glob(os.path.join(folder, "*")))
+		index_values = []
+		start = time.time()
+
+		for file in sorted(glob.glob(os.path.join(folder, "*"))):
+			on_file += 1
+			audio_chunk += AudioSegment.from_file(file)
+			if on_file % batch_size_in_file_count == 0 or on_file == file_count:
+				errorbar.update_text(text=f"Batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
+				audio_signal, sr = AudioChunkToLibrosa.audio_chunk_to_librosa(audio_chunk)
+				chunks = AcousticTools.resolutionize(self, audio_signal, sr, resolution_ms, min_freq, max_freq)
+				Sxx, tn, fn, _ = sound.spectrogram(audio_signal, sr, nperseg=fft_window_size, noverlap=fft_window_size - hop_length)
+
+				def compute_index(chunk):
+					if index_name == "ACI":
+						_, _, aci = features.acoustic_complexity_index(Sxx)
+						index_values.append(aci)
+						#index_values.append(AcousticTools.calculate_aci(sr, fft_window_size, hop_length, chunk))
+					elif index_name == "ADI":
+						adi = features.acoustic_diversity_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
+						index_values.append(adi)
+						#index_values.append(AcousticTools.calculate_adi(chunk, sr, num_bands, fft_window_size, hop_length))
+					elif index_name == "H":
+						h, _ = features.frequency_entropy(Sxx)
+						index_values.append(h)
+						#index_values.append(AcousticTools.calculate_shannon_diversity_index(chunk, sr, num_bands))
+					elif index_name == "AEve":
+						aeve = features.acoustic_eveness_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
+						index_values.append(aeve)
+						#index_values.append(AcousticTools.calculate_aeve(chunk, sr, num_bands))
+					elif index_name == "M":
+						index_values.append(AcousticTools.calculate_m(chunk))
+					elif index_name == "NDSI":
+						ndsi, _, _ =features.soundscape_index(Sxx, fn, flim_bioPh=(min_bio, max_bio), flim_antroPh=(min_anthro, max_anthro))
+						index_values.append(ndsi)
+						#index_values.append(AcousticTools.calculate_ndsi(chunk, sr, num_bands, fft_window_size, hop_length))
+					elif index_name == "Bio":
+						bio = features.bioacoustics_index(Sxx, fn, flim=[min_freq, max_freq])
+						index_values.append(bio)
+						#index_values.append(AcousticTools.calculate_bio(chunk, sr, num_bands, fft_window_size, hop_length))
+					else:
+						audio_chunk = AudioSegment.empty()
+						return None
+
+				from concurrent.futures import ThreadPoolExecutor
+				with ThreadPoolExecutor(max_workers=min(len(chunks), os.cpu_count() or 4)) as executor:
+					index_values.extend(executor.map(compute_index, chunks))
+
+				audio_chunk = AudioSegment.empty()
+
+		end = time.time()
+		errorbar.update_text(text=f"That took {end - start} seconds.")
+		return index_values
+	
+	# This function cuts off lowest and highest frequencies (some modification is required to restore this functionality)
+	# TODO: optimize audio bandpass to make it so that it runs at an adequate speed.
+
+	# This function splits the combined audio clip into clips of desired length. also applies bandpass
+
+	def resolutionize(self, audio, sr, resolution_ms, min_freq, max_freq):
+		#try:
+			#self.mask
+		#except AttributeError:
+			#print("no mask!!!")
+			#bins = len(audio) // 2 + 1
+			#frequencies = np.linspace(0, sr / 2, bins, dtype=np.float32)
+			#self.mask = ((frequencies >= min_freq) & (frequencies <= max_freq))
+		audio_32 = audio.astype(np.float32, copy=False)
+		#fft_data = fft.rfft(audio_32)
+		#fft_data *= self.mask
+		#bandpassed_audio = fft.irfft(fft_data, n=len(audio))
+		processed_audio = audio_32
+		num_samples_per = int(sr * (resolution_ms / 1000.0))
+		total_samples = len(processed_audio)	
+		duration_ms = int((total_samples / sr) * 1000)
+		return [processed_audio[start:start + resolution_ms] for start in range(0, total_samples, num_samples_per)]
+
+	# the code below has been removed in favor of scikit-maad.
+	'''
+	@classmethod
+	def calculate_acoustic_index(self, folder, index_name, fft_window_size=1024, hop_length=512, resolution_ms=60000, batch_size_in_file_count=1, num_bands=10, min_freq=20, max_freq=20000, bin_step=1000, min_bio=2000, max_bio=11000, min_anthro=1000, max_anthro = 2000): 
 		errorbar = InstanceManager.get_instance("Errorbar")
 		print("resolution:")
 		print(resolution_ms)
@@ -45,31 +129,41 @@ class AcousticTools:
 				#print(f"Batch {math.ceil(on_file / batch_size_in_file_count)} out of {math.ceil(file_count / batch_size_in_file_count)}")
 			audio_signal, sr = AudioChunkToLibrosa.audio_chunk_to_librosa(audio_chunk)
 			chunks = AcousticTools.resolutionize(self, audio_signal, sr, resolution_ms, min_freq, max_freq)
+			Sxx, tn, fn, _ = sound.spectrogram(audio_signal, sr, nperseg=fft_window_size, noverlap=fft_window_size - hop_length)
 			for chunk in chunks:
 				if index_name == "ACI":
-					index_values.append(AcousticTools.calculate_aci(sr, fft_window_size, hop_length, chunk))
+					_, _, aci = features.acoustic_complexity_index(Sxx)
+					index_values.append(aci)
+					#index_values.append(AcousticTools.calculate_aci(sr, fft_window_size, hop_length, chunk))
 				elif index_name == "ADI":
-					index_values.append(AcousticTools.calculate_adi(chunk, sr, num_bands, fft_window_size, hop_length))
+					adi = features.acoustic_diversity_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
+					index_values.append(adi)
+					#index_values.append(AcousticTools.calculate_adi(chunk, sr, num_bands, fft_window_size, hop_length))
 				elif index_name == "H":
-					index_values.append(AcousticTools.calculate_shannon_diversity_index(chunk, sr, num_bands))
+					h, _ = features.frequency_entropy(Sxx)
+					index_values.append(h)
+					#index_values.append(AcousticTools.calculate_shannon_diversity_index(chunk, sr, num_bands))
 				elif index_name == "AEve":
-					index_values.append(AcousticTools.calculate_aeve(chunk, sr, num_bands))
+					aeve = features.acoustic_eveness_index(Sxx, fn, fmin=min_freq, fmax=max_freq, bin_step=bin_step)
+					index_values.append(aeve)
+					#index_values.append(AcousticTools.calculate_aeve(chunk, sr, num_bands))
 				elif index_name == "M":
 					index_values.append(AcousticTools.calculate_m(chunk))
 				elif index_name == "NDSI":
-					index_values.append(AcousticTools.calculate_ndsi(chunk, sr, num_bands, fft_window_size, hop_length))
+					ndsi, _, _ =features.soundscape_index(Sxx, fn, flim_bioPh=(min_bio, max_bio), flim_antroPh=(min_anthro, max_anthro))
+					index_values.append(ndsi)
+					#index_values.append(AcousticTools.calculate_ndsi(chunk, sr, num_bands, fft_window_size, hop_length))
 				elif index_name == "Bio":
-					index_values.append(AcousticTools.calculate_bio(chunk, sr, num_bands, fft_window_size, hop_length))
+					bio = features.bioacoustics_index(Sxx, fn, flim=[min_freq, max_freq])
+					index_values.append(bio)
+					#index_values.append(AcousticTools.calculate_bio(chunk, sr, num_bands, fft_window_size, hop_length))
 				audio_chunk = AudioSegment.empty()
 		end = time.time()
-		del self.mask
+		#del self.mask
 		print(index_values)
 		print(f"that took {end - start} seconds.")	
 		errorbar.update_text(text=f"That took {end-start} seconds.")
 		return index_values
-	
-
-	'''
 	# seperately and be represented as a different data point.
 
 	@classmethod
@@ -155,6 +249,7 @@ class AcousticTools:
 		amplitude_envelope = np.abs(signal)
 		m = np.median(amplitude_envelope)
 		return m
+
 '''
 	# Calculates median amplitude envelope
 
@@ -169,25 +264,3 @@ class AcousticTools:
 		ndsi = (biophony_energy - anthrophony_energy) / (biophony_energy + anthrophony_energy + 1e-10) 
 		return ndsi
 '''	
-	# This function cuts off lowest and highest frequencies (some modification is required to restore this functionality)
-	# TODO: optimize audio bandpass to make it so that it runs at an adequate speed.
-
-	# This function splits the combined audio clip into clips of desired length. also applies bandpass
-	def resolutionize(self, audio, sr, resolution_ms, min_freq, max_freq):
-		#try:
-			#self.mask
-		#except AttributeError:
-			#print("no mask!!!")
-			#bins = len(audio) // 2 + 1
-			#frequencies = np.linspace(0, sr / 2, bins, dtype=np.float32)
-			#self.mask = ((frequencies >= min_freq) & (frequencies <= max_freq))
-		audio_32 = audio.astype(np.float32, copy=False)
-		#fft_data = fft.rfft(audio_32)
-		#fft_data *= self.mask
-		#bandpassed_audio = fft.irfft(fft_data, n=len(audio))
-		processed_audio = audio_32
-		num_samples_per = int(sr * (resolution_ms / 1000.0))
-		total_samples = len(processed_audio)	
-		duration_ms = int((total_samples / sr) * 1000)
-		return [processed_audio[start:start + resolution_ms] for start in range(0, total_samples, num_samples_per)]
-
